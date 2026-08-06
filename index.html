@@ -646,7 +646,7 @@ db.ref('.info/connected').on('value', snap => {
 // Track which Firebase keys we already have locally to avoid double-adds
 const fbKeyMap = {}; // name -> fbKey
 
-// Listen for new items in queue (from HP or other computers)
+// Listen for new items in queue (from HP)
 db.ref('queue').on('child_added', snap => {
   const student = snap.val();
   if (!student) return;
@@ -671,21 +671,6 @@ db.ref('queue').on('child_added', snap => {
   if (!state.isPlaying) processQueue();
 });
 
-// Listen for removed items (when processed by this or another computer)
-db.ref('queue').on('child_removed', snap => {
-  const student = snap.val();
-  if (!student) return;
-  // Remove from local queue if present
-  const idx = state.queue.findIndex(s => s.name === student.name);
-  if (idx !== -1) {
-    state.queue.splice(idx, 1);
-    delete fbKeyMap[student.name];
-    saveState();
-    renderQueue();
-    renderStudents();
-  }
-});
-
 // Push to Firebase when computer calls a student locally
 function pushToFirebaseQueue(student) {
   const ref = db.ref('queue').push();
@@ -696,7 +681,6 @@ function pushToFirebaseQueue(student) {
     code: student.code,
     timestamp: Date.now()
   });
-  // Store the key so we can remove it later
   fbKeyMap[student.name] = fbKey;
   return fbKey;
 }
@@ -1418,6 +1402,9 @@ async function processQueue() {
     // Play audio 2x
     await playAudio(state.current);
     await playAudio(state.current);
+    
+    // Small delay between students so queue doesn't rush
+    await new Promise(r => setTimeout(r, 400));
     
     // Move to history with auto-clear after 3 hours
     const now = new Date();
