@@ -515,6 +515,7 @@ body {
 const firebaseConfig = {
   apiKey: "AIzaSyCe3wwUB88mfo15xhEIGin86x3PZYWNBmo",
   authDomain: "sdpi-bee96.firebaseapp.com",
+  databaseURL: "https://sdpi-bee96-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "sdpi-bee96",
   storageBucket: "sdpi-bee96.firebasestorage.app",
   messagingSenderId: "126328001169",
@@ -525,6 +526,15 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 console.log('🔥 Firebase connected:', firebaseConfig.projectId);
+
+// Debug: check connection
+db.ref('.info/connected').on('value', snap => {
+  if (snap.val() === true) {
+    console.log('🔥 Firebase RTDB connected!');
+  } else {
+    console.warn('⚠️ Firebase RTDB disconnected');
+  }
+});
 
 // ==================== FIREBASE LISTENERS ====================
 // Listen for new items in queue (from HP)

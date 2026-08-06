@@ -25,6 +25,9 @@ body {
 }
 .header h1 { font-size: 1rem; font-weight: 700; }
 .header p { font-size: .7rem; opacity: .85; }
+.conn-status { font-size:.6rem; margin-top:2px; }
+.conn-status.online { color:#a5d6a7; }
+.conn-status.offline { color:#ef9a9a; }
 .search-box {
   padding: 8px 12px;
   background: #fff;
@@ -155,6 +158,7 @@ body {
 <div class="header">
   <h1>📞 Panggil Siswa</h1>
   <p>SD Priangan Istiqamah</p>
+  <div class="conn-status offline" id="connStatus">● Menghubungkan...</div>
 </div>
 
 <div class="search-box">
@@ -178,6 +182,7 @@ body {
 const firebaseConfig = {
   apiKey: "AIzaSyCe3wwUB88mfo15xhEIGin86x3PZYWNBmo",
   authDomain: "sdpi-bee96.firebaseapp.com",
+  databaseURL: "https://sdpi-bee96-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "sdpi-bee96",
   storageBucket: "sdpi-bee96.firebasestorage.app",
   messagingSenderId: "126328001169",
@@ -187,6 +192,18 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
+// Debug: check connection
+db.ref('.info/connected').on('value', snap => {
+  const el = document.getElementById('connStatus');
+  if (snap.val() === true) {
+    console.log('🔥 Firebase RTDB connected!');
+    if (el) { el.textContent = '● Terhubung'; el.className = 'conn-status online'; }
+  } else {
+    console.warn('⚠️ Firebase RTDB disconnected');
+    if (el) { el.textContent = '● Terputus'; el.className = 'conn-status offline'; }
+  }
+});
 
 // ==================== STUDENT DATA ====================
 const STUDENT_DATA = [
@@ -298,11 +315,17 @@ function renderStudents() {
       const student = STUDENT_DATA.find(s => s.name === name);
       if (student) {
         // Push to Firebase
-        db.ref('queue').push({
+        const ref = db.ref('queue').push();
+        ref.set({
           name: student.name,
           cls: student.cls,
           code: student.code,
           timestamp: Date.now()
+        }).then(() => {
+          console.log('✅ Pushed to Firebase:', student.name);
+        }).catch(err => {
+          console.error('❌ Firebase push failed:', err);
+          showToast('❌ Gagal: ' + err.message);
         });
         showToast('✅ ' + student.name);
         if (navigator.vibrate) navigator.vibrate(50);
