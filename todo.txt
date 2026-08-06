@@ -1,0 +1,8 @@
+buatkan saya palikasi pemanggilan siswa sekolah dasar dengan nama : Pemanggilan siswa SD Priangan Istiqamah
+dengan tugas orang tua memanggil siswa dengan lalu masuk kedalam antrian , lalu ada voice nama audio yang bersuara . misal nama anu  satu a ,nama anu satu c , dan seterus nya . 
+kemudian setelah itu setelah nama yang telah terpanggil akan tampil di history siswa terpanggil .
+untuk logo : logo.png 
+untuk nama siswa nya : siswa.txt
+audio: folder audio 
+buat dalam bentuk .html
+kecepatan dan efiensi di dahulukan dalam website ini 

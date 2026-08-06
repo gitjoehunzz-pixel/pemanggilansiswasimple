@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pemanggilan Siswa SD Priangan Istiqamah</title>
+<style>
+:root {
+  --bg: #f0f4f8;
+  --card: #fff;
+  --primary: #1a73e8;
+  --primary-dark: #1557b0;
+  --accent: #e8a817;
+  --danger: #d93025;
+  --success: #0d904f;
+  --text: #202124;
+  --text-light: #5f6368;
+  --border: #e0e0e0;
+  --shadow: 0 2px 8px rgba(0,0,0,.08);
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.4;
+}
+/* Header */
+.header {
+  background: linear-gradient(135deg, #0d47a1, #1565c0);
+  color: #fff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  background: #fff;
+  flex-shrink: 0;
+}
+.header-title h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -.3px;
+}
+.header-title p {
+  font-size: .8rem;
+  opacity: .9;
+  margin-top: 1px;
+}
+/* Main Layout */
+.main-container {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: 1fr auto;
+  gap: 12px;
+  padding: 12px;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: calc(100vh - 92px);
+}
+/* Student Panel */
+.student-panel {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  grid-row: 1 / 3;
+}
+.panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.panel-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 320px;
+}
+.search-box input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  font-size: .85rem;
+  outline: none;
+  transition: border-color .2s;
+}
+.search-box input:focus {
+  border-color: var(--primary);
+}
+/* Class Tabs */
+.class-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.class-tab {
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+  font-size: .78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all .15s;
+  user-select: none;
+}
+.class-tab:hover { background: #e8f0fe; border-color: var(--primary); }
+.class-tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+/* Student Grid */
+.student-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+  align-content: start;
+}
+.student-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all .15s;
+  gap: 8px;
+  user-select: none;
+}
+.student-card:hover {
+  background: #e8f0fe;
+  border-color: #90c2f0;
+}
+.student-card.in-queue {
+  background: #fff3cd;
+  border-color: #ffc107;
+  cursor: default;
+}
+.student-card.called {
+  background: #d4edda;
+  border-color: #7dcea0;
+  cursor: default;
+  opacity: .7;
+}
+.student-card .name {
+  font-size: .82rem;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.student-card .badge {
+  font-size: .65rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.badge-call { background: #e8f0fe; color: var(--primary); }
+.badge-wait { background: #fff3cd; color: #b8860b; }
+.badge-done { background: #d4edda; color: #0d6832; }
+.badge-noaudio { background: #fce8e6; color: #c5221f; font-size: .6rem; }
+/* Right Panel */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* Queue Panel */
+.queue-panel {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 50%;
+}
+.queue-panel .panel-header {
+  background: #fff8e1;
+  border-bottom: 2px solid #ffc107;
+}
+.queue-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 60px;
+}
+.queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #fff8e1;
+  border-radius: var(--radius-sm);
+  border: 1px solid #ffe082;
+  font-size: .82rem;
+  gap: 8px;
+  animation: slideIn .2s ease;
+}
+.queue-item.current {
+  background: #ff9800;
+  color: #fff;
+  border-color: #e65100;
+  animation: pulse 1.5s infinite;
+}
+.queue-item .q-num {
+  font-weight: 700;
+  font-size: .9rem;
+  min-width: 24px;
+  text-align: center;
+}
+.queue-item .q-name {
+  flex: 1;
+  font-weight: 500;
+}
+.queue-item .q-remove {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 2px 6px;
+  border-radius: 50%;
+  line-height: 1;
+  transition: all .15s;
+}
+.queue-item .q-remove:hover { color: #d93025; background: rgba(0,0,0,.05); }
+.queue-item.current .q-remove { color: rgba(255,255,255,.7); }
+.queue-item.current .q-remove:hover { color: #fff; background: rgba(255,255,255,.15); }
+.queue-empty {
+  text-align: center;
+  color: #aaa;
+  padding: 20px;
+  font-size: .82rem;
+}
+/* Now Calling */
+.now-calling {
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(255,152,0,.3);
+  text-align: center;
+  animation: glowPulse 2s infinite;
+}
+.now-calling .label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: .9;
+}
+.now-calling .calling-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.now-calling .calling-class {
+  font-size: .75rem;
+  opacity: .85;
+}
+/* History Panel */
+.history-panel {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.history-panel .panel-header {
+  background: #e8f5e9;
+  border-bottom: 2px solid #4caf50;
+}
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f1f8e9;
+  border-radius: var(--radius-sm);
+  font-size: .8rem;
+  animation: slideIn .2s ease;
+}
+.history-item .h-time {
+  font-size: .68rem;
+  color: #888;
+  flex-shrink: 0;
+}
+.history-item .h-name {
+  flex: 1;
+  font-weight: 500;
+}
+.history-item .h-recall {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 3px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: .7rem;
+  font-weight: 600;
+  transition: all .15s;
+}
+.history-item .h-recall:hover { background: var(--primary-dark); }
+/* Buttons */
+.btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  font-weight: 600;
+  font-size: .8rem;
+  cursor: pointer;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-danger { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
+.btn-danger:hover { background: #fce8e6; }
+.btn-sm { padding: 4px 12px; font-size: .72rem; }
+/* Animations */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,152,0,.4); }
+  50% { box-shadow: 0 0 0 10px rgba(255,152,0,0); }
+}
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(255,152,0,.3); }
+  50% { box-shadow: 0 4px 24px rgba(255,152,0,.5); }
+}
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+/* Responsive */
+@media (max-width: 900px) {
+  .main-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    height: auto;
+  }
+  .student-panel { grid-row: auto; max-height: 50vh; }
+  .right-panel { flex-direction: column; }
+  .queue-panel { max-height: 30vh; }
+}
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: .85rem;
+  font-weight: 500;
+  z-index: 999;
+  animation: toastIn .3s ease, toastOut .3s ease 2s forwards;
+  pointer-events: none;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } }
+@keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(20px); } }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <img src="logo.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+  <div class="header-title">
+    <h1>Pemanggilan Siswa</h1>
+    <p>SD Priangan Istiqamah</p>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main-container">
+  <!-- Student Panel -->
+  <div class="student-panel" id="studentPanel">
+    <div class="panel-header">
+      <h2>📋 Daftar Siswa</h2>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔍 Cari siswa..." autocomplete="off">
+      </div>
+    </div>
+    <div class="class-tabs" id="classTabs"></div>
+    <div class="student-grid" id="studentGrid"></div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <!-- Queue Panel -->
+    <div class="queue-panel" id="queuePanel">
+      <div class="panel-header">
+        <h2>⏳ Antrian <span id="queueCount" style="font-size:.75rem;color:#888">(0)</span></h2>
+        <button class="btn btn-danger btn-sm" onclick="clearQueue()" title="Kosongkan antrian">✕ Hapus Semua</button>
+      </div>
+      <div class="queue-list" id="queueList">
+        <div class="queue-empty">Belum ada antrian</div>
+      </div>
+      <div class="now-calling" id="nowCalling" style="display:none">
+        <div class="label">🔊 Sedang Memanggil</div>
+        <div class="calling-name" id="callingName"></div>
+        <div class="calling-class" id="callingClass"></div>
+      </div>
+    </div>
+
+    <!-- History Panel -->
+    <div class="history-panel">
+      <div class="panel-header">
+        <h2>✅ History Terpanggil <span id="historyCount" style="font-size:.75rem;color:#888">(0)</span></h2>
+        <button class="btn btn-danger btn-sm" onclick="clearHistory()">✕ Hapus</button>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="queue-empty">Belum ada siswa terpanggil</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== STUDENT DATA ====================
+// Parsed from siswa.txt - class code mapping for audio files
+const STUDENT_DATA = [
+  // kelas 1 A
+  {name:"Abimana Praga Aksara", cls:"1 A", code:"1a"},
+  {name:"Abinaya Keano Parasyad", cls:"1 A", code:"1a"},
+  {name:"Ahmad Haidar Ali Darmawan", cls:"1 A", code:"1a"},
+  {name:"Aiyra Al Lathiif", cls:"1 A", code:"1a"},
+  {name:"Alira Attahiyya Albiruni", cls:"1 A", code:"1a"},
+  {name:"Almeer Tsabtaqi Haaziq", cls:"1 A", code:"1a"},
+  {name:"Areta Nirankara Suryadi", cls:"1 A", code:"1a"},
+  {name:"Athmar Mahathir Hidayat", cls:"1 A", code:"1a"},
+  {name:"Aurozalea Kaina Isar", cls:"1 A", code:"1a"},
+  {name:"Clarish Nafeesa Satrya", cls:"1 A", code:"1a"},
+  {name:"Clemira Manha Kalila", cls:"1 A", code:"1a"},
+  {name:"Enzo Melviano Giel", cls:"1 A", code:"1a"},
+  {name:"Gwen Callista Adreena", cls:"1 A", code:"1a"},
+  {name:"Kalandra Xaquille Calief Rinaldhi", cls:"1 A", code:"1a"},
+  {name:"Kalluna Kamidya Iskandar", cls:"1 A", code:"1a"},
+  {name:"Kasyafani Fatih Alkarim", cls:"1 A", code:"1a"},
+  {name:"Kavin Aulian Luthfi", cls:"1 A", code:"1a"},
+  {name:"Lafizia Randika Fallah", cls:"1 A", code:"1a"},
+  {name:"Lavina Noushin Boerhan", cls:"1 A", code:"1a"},
+  {name:"Laylanafasya Anakahdin", cls:"1 A", code:"1a"},
+  {name:"Muhammad Radeya Shakti Irdiansyah", cls:"1 A", code:"1a"},
+  {name:"Muhammad Zayn Alhanan", cls:"1 A", code:"1a"},
+  {name:"Namira Gya Falisha", cls:"1 A", code:"1a"},
+  {name:"Naufal Zavian Alfarisqy", cls:"1 A", code:"1a"},
+  {name:"Raffasya Ghaniy Wibowo", cls:"1 A", code:"1a"},
+  {name:"Zhafran Tama Pranoto", cls:"1 A", code:"1a"},
+  // kelas 1 B
+  {name:"Akleema Meysharuna Kinara", cls:"1 B", code:"1b"},
+  {name:"Aldebaran Maliq Pramudya", cls:"1 B", code:"1b"},
+  {name:"Almahyra Nafeeza Wiramsyah", cls:"1 B", code:"1b"},
+  {name:"Alvarendra Oxy Pradipta", cls:"1 B", code:"1b"},
+  {name:"Alzio Zavier Murod", cls:"1 B", code:"1b"},
+  {name:"Athar Rashya Darmawan", cls:"1 B", code:"1b"},
+  {name:"Atila Lautan Arrahman Dinata", cls:"1 B", code:"1b"},
+  {name:"Cattaleya Kiandra Dian", cls:"1 B", code:"1b"},
+  {name:"Edzard Zanki Ramadhan", cls:"1 B", code:"1b"},
+  {name:"Elok Enggar Sabda Lukito", cls:"1 B", code:"1b"},
+  {name:"Farrah Medina Nurfitri", cls:"1 B", code:"1b"},
+  {name:"Haikal Pradipta Nishad Kurnia", cls:"1 B", code:"1b"},
+  {name:"Hana Anasera Shezan", cls:"1 B", code:"1b"},
+  {name:"Jeshan Batsya Rahman", cls:"1 B", code:"1b"},
+  {name:"Kayrra Rachman", cls:"1 B", code:"1b"},
+  {name:"Khalid Zulfiqar Mahavira", cls:"1 B", code:"1b"},
+  {name:"Khanza Shanum Azzahra", cls:"1 B", code:"1b"},
+  {name:"Muhammad Agira Hamizan", cls:"1 B", code:"1b"},
+  {name:"Muhammad Kalandra Arrayan", cls:"1 B", code:"1b"},
+  {name:"Muhammad Ryuga Prahasta", cls:"1 B", code:"1b"},
+  {name:"Nadir Ramadanish Alfarizy", cls:"1 B", code:"1b"},
+  {name:"Nafeesha Saila Qisty", cls:"1 B", code:"1b"},
+  {name:"Raffasya Aufar Rizky", cls:"1 B", code:"1b"},
+  {name:"Rakay Djiwa Andiryanto", cls:"1 B", code:"1b"},
+  {name:"Ramadhan Arriza Raharjo", cls:"1 B", code:"1b"},
+  {name:"Widhinakara Warashika Wiraprasastha", cls:"1 B", code:"1b"},
+  // kelas 1 C
+  {name:"Abdillah Hamka", cls:"1 C", code:"1c"},
+  {name:"Abdul Malik Regiansah", cls:"1 C", code:"1c"},
+  {name:"Alika Giska Santosa", cls:"1 C", code:"1c"},
+  {name:"Alkhalifi Ksatria Sakhi", cls:"1 C", code:"1c"},
+  {name:"Atiya Kirana", cls:"1 C", code:"1c"},
+  {name:"Ceisya Saffa Sabia", cls:"1 C", code:"1c"},
+  {name:"Chiara Sky", cls:"1 C", code:"1c"},
+  {name:"Elvano Putra Sasongko", cls:"1 C", code:"1c"},
+  {name:"Emir Fatih Alfarizqi", cls:"1 C", code:"1c"},
+  {name:"Galaxia Bintang Damarlangit", cls:"1 C", code:"1c"},
+  {name:"Ganesha Malika Al Hakim", cls:"1 C", code:"1c"},
+  {name:"Hikam Zayd Gafi", cls:"1 C", code:"1c"},
+  {name:"Ibrahim Al Muzzammil Nor", cls:"1 C", code:"1c"},
+  {name:"Inara Putri Vindra", cls:"1 C", code:"1c"},
+  {name:"Khaira Afia Yumna", cls:"1 C", code:"1c"},
+  {name:"Khalisa Fernanda", cls:"1 C", code:"1c"},
+  {name:"Kinara Latisha Sakhi", cls:"1 C", code:"1c"},
+  {name:"Labib Haider Hilaby", cls:"1 C", code:"1c"},
+  {name:"Muhammad Al Fatih", cls:"1 C", code:"1c"},
+  {name:"Muhammad Kaysan Bara Alghazzi", cls:"1 C", code:"1c"},
+  {name:"Muhammad Maghali Haidirrahman", cls:"1 C", code:"1c"},
+  {name:"Muhammad Tsaqif Bukhori Sulistyo", cls:"1 C", code:"1c"},
+  {name:"Rezvan Virgil Al-Khawarizmi Surianto", cls:"1 C", code:"1c"},
+  {name:"Senja Anjani Putri", cls:"1 C", code:"1c"},
+  {name:"Shaquille Arrayan Rosasona", cls:"1 C", code:"1c"},
+  {name:"Tabina Azkiya Khairani", cls:"1 C", code:"1c"},
+  // kelas 2 A
+  {name:"Achilla Khumaira Azzahra", cls:"2 A", code:"2a"},
+  {name:"Ainaya Fathiyaturahma Rizkya", cls:"2 A", code:"2a"},
+  {name:"Aiza Sabiya Nasution", cls:"2 A", code:"2a"},
+  {name:"Alfiandra Ahmad Hidayat", cls:"2 A", code:"2a"},
+  {name:"Alluna Khayra Maitra Prawiranata", cls:"2 A", code:"2a"},
+  {name:"Almeera Rumaisha Andriani", cls:"2 A", code:"2a"},
+  {name:"Alula Mishall Isar", cls:"2 A", code:"2a"},
+  {name:"Bilal Qawi Insani", cls:"2 A", code:"2a"},
+  {name:"Dahayu Nuha Azkadina", cls:"2 A", code:"2a"},
+  {name:"Elvina Nadira Kusumaputri", cls:"2 A", code:"2a"},
+  {name:"Elzein Ravindra Putrairfi", cls:"2 A", code:"2a"},
+  {name:"Fathan Kaivandra Abizar", cls:"2 A", code:"2a"},
+  {name:"Freya Eltsany Aiza", cls:"2 A", code:"2a"},
+  {name:"Ibrahim Risyad Abqary", cls:"2 A", code:"2a"},
+  {name:"Ifa Mariska Amalia", cls:"2 A", code:"2a"},
+  {name:"Kamael Irtiza Rahman", cls:"2 A", code:"2a"},
+  {name:"Kayden Razqa Raqila", cls:"2 A", code:"2a"},
+  {name:"Kirania Alesha Halim", cls:"2 A", code:"2a"},
+  {name:"Muhammad Aqwam Aatmadeva", cls:"2 A", code:"2a"},
+  {name:"Muhammad Daffa Faiza", cls:"2 A", code:"2a"},
+  {name:"Muhammad Oliver Anandito", cls:"2 A", code:"2a"},
+  {name:"Nashira Thahira Yumna", cls:"2 A", code:"2a"},
+  {name:"Nayla Khalisa Zahira", cls:"2 A", code:"2a"},
+  {name:"Nazeera Ghassani Haq", cls:"2 A", code:"2a"},
+  {name:"Rasyid Degea Alkhuder", cls:"2 A", code:"2a"},
+  {name:"Zahid Salman Lathif", cls:"2 A", code:"2a"},
+  // kelas 2 B
+  {name:"Abizar Tariq Subarkah", cls:"2 B", code:"2b"},
+  {name:"Ahmad Langit Cakradinata", cls:"2 B", code:"2b"},
+  {name:"Alby Syauqi Maulana", cls:"2 B", code:"2b"},
+  {name:"Ammar Brilliant Azhafani", cls:"2 B", code:"2b"},
+  {name:"Aqilla Shafiyah Mashel", cls:"2 B", code:"2b"},
+  {name:"Aqsha Sabiya Almahyra", cls:"2 B", code:"2b"},
+  {name:"Arsyila Ilma Salsabila", cls:"2 B", code:"2b"},
+  {name:"Auleeya Almahyra Putri", cls:"2 B", code:"2b"},
+  {name:"Emilia Salvina Waluyo", cls:"2 B", code:"2b"},
+  {name:"Haziq Kai Dzakir Erwanto", cls:"2 B", code:"2b"},
+  {name:"Kai Azzura Dharmawangsa", cls:"2 B", code:"2b"},
+  {name:"Kaivan Rakai Arrayyan", cls:"2 B", code:"2b"},
+  {name:"Kaylila Zara Algiffari", cls:"2 B", code:"2b"},
+  {name:"Khadijah Nazla", cls:"2 B", code:"2b"},
+  {name:"Khaira Kireyna Farzana Firmansyah", cls:"2 B", code:"2b"},
+  {name:"Mikhayla Naura Zeba", cls:"2 B", code:"2b"},
+  {name:"Muhammad Fachrezy Arrasyiid Putra", cls:"2 B", code:"2b"},
+  {name:"Nashita Thalita Yumna", cls:"2 B", code:"2b"},
+  {name:"Rasyid Ali Hussein Hazmi", cls:"2 B", code:"2b"},
+  {name:"Saura Ayesha Devanya", cls:"2 B", code:"2b"},
+  {name:"Shakila Naura Almira Budiman", cls:"2 B", code:"2b"},
+  {name:"Uwais Adhytama Riadhy", cls:"2 B", code:"2b"},
+  {name:"Uwais Zanki Al Fatih", cls:"2 B", code:"2b"},
+  {name:"Xhaka Pradipta Mahendra", cls:"2 B", code:"2b"},
+  // kelas 2 C
+  {name:"Abizar Ali Asfarry", cls:"2 C", code:"2c"},
+  {name:"Adheera Azskara Wardhana", cls:"2 C", code:"2c"},
+  {name:"Alifiandra Hadid Athariz", cls:"2 C", code:"2c"},
+  {name:"Aurora Oktafiq Wisyasunda", cls:"2 C", code:"2c"},
+  {name:"Binar Dahayu Keshwari", cls:"2 C", code:"2c"},
+  {name:"Clemira Zakiyyah Adinti", cls:"2 C", code:"2c"},
+  {name:"Dheandra Abrianna Jasmine", cls:"2 C", code:"2c"},
+  {name:"Emiryl Rumi Adisyam", cls:"2 C", code:"2c"},
+  {name:"Evren Armaghan Devasa", cls:"2 C", code:"2c"},
+  {name:"Fatimah Tazkia Shahab", cls:"2 C", code:"2c"},
+  {name:"Hasna Azkadina", cls:"2 C", code:"2c"},
+  {name:"Jasmine Marissa Madani", cls:"2 C", code:"2c"},
+  {name:"Kamala Aisha Libertian", cls:"2 C", code:"2c"},
+  {name:"Khalifa Atthariz Gunawan", cls:"2 C", code:"2c"},
+  {name:"Kiyandra Kamania Athaya Bhumi", cls:"2 C", code:"2c"},
+  {name:"Muhamad Althaf Keanu Aditya", cls:"2 C", code:"2c"},
+  {name:"Muhammad Andrusha Keenandra Abalardi", cls:"2 C", code:"2c"},
+  {name:"Muhammad Hafiz Al Qarni", cls:"2 C", code:"2c"},
+  {name:"Naura Edelweis Mounira", cls:"2 C", code:"2c"},
+  {name:"Nayazka Raqila Darmawan", cls:"2 C", code:"2c"},
+  {name:"Parisya Ariella Taruni Megananda", cls:"2 C", code:"2c"},
+  {name:"Shakeel Alhanan Ramadhan", cls:"2 C", code:"2c"},
+  {name:"Shaqueena Shezan Nalendra", cls:"2 C", code:"2c"},
+  {name:"Shena Arsyanarendra Setiyawan", cls:"2 C", code:"2c"},
+  // kelas 3 A
+  {name:"Adlan Gyanendra Iskandar", cls:"3 A", code:"3a"},
+  {name:"Alejandro Fariq Ash-Shabir", cls:"3 A", code:"3a"},
+  {name:"Arka Ibrahim Abisatya", cls:"3 A", code:"3a"},
+  {name:"Arshad Shafiulla Shakeel", cls:"3 A", code:"3a"},
+  {name:"Azwidadari Alimah Sakanti", cls:"3 A", code:"3a"},
+  {name:"Benami Abhinav Granada", cls:"3 A", code:"3a"},
+  {name:"Bhaskoro Bilal Pradana", cls:"3 A", code:"3a"},
+  {name:"Bima Nattaradja Putra Caesar", cls:"3 A", code:"3a"},
+  {name:"Devara Abhirama", cls:"3 A", code:"3a"},
+  {name:"Elmeera Vidiar Khaireen", cls:"3 A", code:"3a"},
+  {name:"Faradina Ameera Putri", cls:"3 A", code:"3a"},
+  {name:"Ghaniya Alikah Riadhy", cls:"3 A", code:"3a"},
+  {name:"Kafiya Hannun Nisa", cls:"3 A", code:"3a"},
+  {name:"Khayra Anindita Humaira Narayana", cls:"3 A", code:"3a"},
+  {name:"Lashira Alula Azkadina", cls:"3 A", code:"3a"},
+  {name:"Misykah Ainur Shaqeena", cls:"3 A", code:"3a"},
+  {name:"Muhammad Ghalib Al Ghazy", cls:"3 A", code:"3a"},
+  {name:"Muhammad Nouval Sabian Hermansyah", cls:"3 A", code:"3a"},
+  {name:"Noureen Falisha Natashary", cls:"3 A", code:"3a"},
+  {name:"Reiga Jalu Rainata", cls:"3 A", code:"3a"},
+  {name:"Shafira Azzahra", cls:"3 A", code:"3a"},
+  {name:"Shaqueena Almahyra Shanum", cls:"3 A", code:"3a"},
+  {name:"Sutan Ashiiran Fath", cls:"3 A", code:"3a"},
+  {name:"Tivanka Azkia Almahyra", cls:"3 A", code:"3a"},
+  // kelas 3 B
+  {name:"Affandi Atharrizqi Ephifanio", cls:"3 B", code:"3b"},
+  {name:"Aldebaran El Fathan", cls:"3 B", code:"3b"},
+  {name:"Alinka Safiya Alesha", cls:"3 B", code:"3b"},
+  {name:"Annisa Dzakiya Humaira Setiawan", cls:"3 B", code:"3b"},
+  {name:"Aqsa Mulky Rajendra", cls:"3 B", code:"3b"},
+  {name:"Asmanaya Arundari Parinduri", cls:"3 B", code:"3b"},
+  {name:"Azmya Raisa Putri Utomo", cls:"3 B", code:"3b"},
+  {name:"Bumi Dannendra Kurniawan", cls:"3 B", code:"3b"},
+  {name:"Chahna Alindya Mahendrarta", cls:"3 B", code:"3b"},
+  {name:"Daniyal Athallah Putra", cls:"3 B", code:"3b"},
+  {name:"Gifarel Birru Alberga", cls:"3 B", code:"3b"},
+  {name:"Indhira Sophie Nugraha", cls:"3 B", code:"3b"},
+  {name:"Kanaya Azkadina Ramadhani", cls:"3 B", code:"3b"},
+  {name:"Kaylendra Friz Deschanel", cls:"3 B", code:"3b"},
+  {name:"Kenzie Atharazka Hadid", cls:"3 B", code:"3b"},
+  {name:"Kirana Azkayla Nour Gumara", cls:"3 B", code:"3b"},
+  {name:"Mahira Elzira", cls:"3 B", code:"3b"},
+  {name:"Mikaila Shafira Hamjayani", cls:"3 B", code:"3b"},
+  {name:"Muhammad Daniel Rafisqy", cls:"3 B", code:"3b"},
+  {name:"Nathan Alfatih Winatapraja", cls:"3 B", code:"3b"},
+  {name:"Navisha Shanum Augarfi", cls:"3 B", code:"3b"},
+  {name:"Neal Muhammad Prawira", cls:"3 B", code:"3b"},
+  {name:"Rasya Alfath Permana", cls:"3 B", code:"3b"},
+  {name:"Romeesa Azkadina F Kautsarrazky", cls:"3 B", code:"3b"},
+  // kelas 4A
+  {name:"Adreena Malika Aprilia", cls:"4A", code:"4a"},
+  {name:"Anindya Putri Abimanyu", cls:"4A", code:"4a"},
+  {name:"Arshen Hilmi Alfatih", cls:"4A", code:"4a"},
+  {name:"Arzetu Zea Almaira Pratama", cls:"4A", code:"4a"},
+  {name:"Genta Pratama Putra", cls:"4A", code:"4a"},
+  {name:"Gibran Maheswara Putra", cls:"4A", code:"4a"},
+  {name:"Hamizan Karim Leksono", cls:"4A", code:"4a"},
+  {name:"Inara Shaleha Aisyahyara", cls:"4A", code:"4a"},
+  {name:"Jordana Yanaiza Manika", cls:"4A", code:"4a"},
+  {name:"Kamandaru Kurniadi", cls:"4A", code:"4a"},
+  {name:"Karla Dzakirah Sulistyo", cls:"4A", code:"4a"},
+  {name:"Lovelia Azzahra Firmansyah", cls:"4A", code:"4a"},
+  {name:"Muhammad Zain Habibie", cls:"4A", code:"4a"},
+  {name:"Raden Ali Syafi Rachdiansyah", cls:"4A", code:"4a"},
+  {name:"Raden Maheswari Tsurayya Kaysi Fajjriani", cls:"4A", code:"4a"},
+  {name:"Reynard Dzikri Suryowibowo", cls:"4A", code:"4a"},
+  {name:"Toby Pradipta Darmawan", cls:"4A", code:"4a"},
+  {name:"Viola Rafanda Almeera Furqani", cls:"4A", code:"4a"},
+  // kelas 4B
+  {name:"Abudzar Alghifari Abshar", cls:"4B", code:"4b"},
+  {name:"Al Neevan Faustin", cls:"4B", code:"4b"},
+  {name:"Alesha Aulia Maqdis", cls:"4B", code:"4b"},
+  {name:"Almira Bebbie Adrian", cls:"4B", code:"4b"},
+  {name:"Almira Khaliluna Yasmin Syarif", cls:"4B", code:"4b"},
+  {name:"Aryandaru Wiranandra Wibisono", cls:"4B", code:"4b"},
+  {name:"Fabian Kamil Atalla", cls:"4B", code:"4b"},
+  {name:"Ghatan Atharazka Pramudya", cls:"4B", code:"4b"},
+  {name:"Khaliluna Andara Putri", cls:"4B", code:"4b"},
+  {name:"Khayra Azeeqa Syabania", cls:"4B", code:"4b"},
+  {name:"Muhammad Zayd Alfarisi", cls:"4B", code:"4b"},
+  {name:"Naila Azka Ramadhani", cls:"4B", code:"4b"},
+  {name:"Rashya Arkhan Wiratama", cls:"4B", code:"4b"},
+  {name:"Reynand Alfandy Susilo", cls:"4B", code:"4b"},
+  {name:"Sabiya Qori Almahyra", cls:"4B", code:"4b"},
+  {name:"Tanisha Adreena", cls:"4B", code:"4b"},
+  {name:"Yusuf Abdullah Basarah", cls:"4B", code:"4b"},
+  {name:"Zia Aurora Putrianza Prasetya", cls:"4B", code:"4b"},
+  // kelas 5A
+  {name:"Afina Syakila Ramadhani", cls:"5A", code:"5a"},
+  {name:"Ahmad Rayyan Adam", cls:"5A", code:"5a"},
+  {name:"Akhtar Samir Al - Arkan Erwanto", cls:"5A", code:"5a"},
+  {name:"Alexa Cotrunnada Classicamadrid", cls:"5A", code:"5a"},
+  {name:"Chanpilar Triaz Putra", cls:"5A", code:"5a"},
+  {name:"Cinta Putrianza Prasetya", cls:"5A", code:"5a"},
+  {name:"Fabian Malik Khalfani", cls:"5A", code:"5a"},
+  {name:"Humaira Shidqia Aqilah Syanandra", cls:"5A", code:"5a"},
+  {name:"Kaneishia Kinandari Parinduri", cls:"5A", code:"5a"},
+  {name:"Mahameru Arka Pratista", cls:"5A", code:"5a"},
+  {name:"Mikail Arnesta", cls:"5A", code:"5a"},
+  {name:"Muhammad Najwan Mahawira Dhyaulhaq", cls:"5A", code:"5a"},
+  {name:"Muhammad Viggo Lateef Sulistyo", cls:"5A", code:"5a"},
+  {name:"Muhammad Zain Nabeel", cls:"5A", code:"5a"},
+  {name:"Rafazka Hafizh Muzakki Zulraj", cls:"5A", code:"5a"},
+  {name:"Safeya Aisyah Azkadina", cls:"5A", code:"5a"},
+  {name:"Shara Dzakiya Adinda Setiawan", cls:"5A", code:"5a"},
+  {name:"Siti Sylvia Arif", cls:"5A", code:"5a"},
+  {name:"Velocette Charlotte Syahkilla Subekti", cls:"5A", code:"5a"},
+  // kelas 5B
+  {name:"Abdul Aziz", cls:"5B", code:"5b"},
+  {name:"Adeeva Rizma Nurmaulida", cls:"5B", code:"5b"},
+  {name:"Ainayya Putri Aryanto", cls:"5B", code:"5b"},
+  {name:"Alaric Radika Maulana", cls:"5B", code:"5b"},
+  {name:"Ardhyanto Prabaswara Khafi", cls:"5B", code:"5b"},
+  {name:"Azzahra Mutya Ramdhani", cls:"5B", code:"5b"},
+  {name:"Bilal Tranata Ashary", cls:"5B", code:"5b"},
+  {name:"Fathur Dewangga Setiawan", cls:"5B", code:"5b"},
+  {name:"Gemintang Putri Kirana", cls:"5B", code:"5b"},
+  {name:"Humaira Sheza Shavira", cls:"5B", code:"5b"},
+  {name:"Idlan Ziandru Putra Irfi", cls:"5B", code:"5b"},
+  {name:"Kendra Attala Kareem", cls:"5B", code:"5b"},
+  {name:"Muhammad Kemal Arsyad", cls:"5B", code:"5b"},
+  {name:"Nizza Alviena Rachman", cls:"5B", code:"5b"},
+  {name:"Puan Dayu Saskara", cls:"5B", code:"5b"},
+  {name:"Raden Ricko Muharram Sardjono", cls:"5B", code:"5b"},
+  {name:"Rakhee Falah Putri Firdaus", cls:"5B", code:"5b"},
+  {name:"Sean Aurelia Setiyawan", cls:"5B", code:"5b"},
+  // kelas 6
+  {name:"Aisha Kamila Muttaqin", cls:"6", code:"6a"},
+  {name:"Al Farabi Awalul Haq", cls:"6", code:"6a"},
+  {name:"Annisa Fathiyyah", cls:"6", code:"6a"},
+  {name:"Aura Latisha Aquina Sholehah", cls:"6", code:"6a"},
+  {name:"Banu Mibras Naufal", cls:"6", code:"6a"},
+  {name:"Bintang Chico Wijaya Junior", cls:"6", code:"6a"},
+  {name:"Bintang Khalif Rizal", cls:"6", code:"6a"},
+  {name:"Cordelia Khansa Rafani", cls:"6", code:"6a"},
+  {name:"Daffandra Arsenio Gunawan", cls:"6", code:"6a"},
+  {name:"Kemina Gienka Setyawan", cls:"6", code:"6a"},
+  {name:"Kennes Ayunindya Bismantara", cls:"6", code:"6a"},
+  {name:"Laika Aprillia Sulaeman", cls:"6", code:"6a"},
+  {name:"Muhammad Raditya Satriatama Andrenike", cls:"6", code:"6a"},
+  {name:"Nacita Adzkia", cls:"6", code:"6a"},
+  {name:"Naura Verisha Jatnika", cls:"6", code:"6a"},
+  {name:"Qiandra Allody Aksalia", cls:"6", code:"6a"},
+  {name:"Raifa Fathina Azkia", cls:"6", code:"6a"},
+  {name:"Ratu Fathia Yuniar", cls:"6", code:"6a"},
+  {name:"Razarine Zabdan Putri Waluya", cls:"6", code:"6a"},
+  {name:"Sandji Arsyad", cls:"6", code:"6a"},
+  {name:"Steve Aprilio Wijaya", cls:"6", code:"6a"},
+  {name:"Tanisha Diandra Putri", cls:"6", code:"6a"},
+  {name:"Yashvir Dilan", cls:"6", code:"6a"},
+];
+
+// ==================== AUDIO MAPPING ====================
+// Maps student name to audio file path
+function getAudioFile(student) {
+  // Convert name: lowercase, replace spaces & hyphens with underscores
+  let key = student.name.toLowerCase()
+    .replace(/ /g, '_')
+    .replace(/-/g, '_');
+  return 'audio/' + student.code + '_' + key + '.mp3';
+}
+
+// Pre-compute audio file paths and check existence
+const audioCache = {};
+function checkAudio(student) {
+  if (audioCache[student.name] !== undefined) return audioCache[student.name];
+  const path = getAudioFile(student);
+  // We'll try to play and cache result on first attempt
+  audioCache[student.name] = path;
+  return path;
+}
+
+// Pre-compute all audio paths
+STUDENT_DATA.forEach(s => { s.audioPath = getAudioFile(s); });
+
+// ==================== STATE ====================
+const state = {
+  queue: [],           // Array of student objects in queue
+  current: null,       // Currently calling student
+  isPlaying: false,    // Audio is playing
+  history: [],         // Array of {student, time}
+  activeClass: 'all',  // Active class filter
+  searchQuery: '',     // Search query
+  audio: null,         // Current Audio element
+};
+
+// ==================== DOM REFS ====================
+const $ = (id) => document.getElementById(id);
+const classTabs = $('classTabs');
+const studentGrid = $('studentGrid');
+const queueList = $('queueList');
+const queueCount = $('queueCount');
+const historyList = $('historyList');
+const historyCount = $('historyCount');
+const nowCalling = $('nowCalling');
+const callingName = $('callingName');
+const callingClass = $('callingClass');
+const searchInput = $('searchInput');
+
+// ==================== RENDER ====================
+
+// Get unique classes
+const classes = [...new Set(STUDENT_DATA.map(s => s.cls))];
+
+// Build class tabs
+function renderTabs() {
+  let html = '<button class="class-tab active" data-cls="all">Semua</button>';
+  classes.forEach(cls => {
+    html += `<button class="class-tab" data-cls="${cls}">Kelas ${cls}</button>`;
+  });
+  classTabs.innerHTML = html;
+
+  // Click handlers
+  classTabs.querySelectorAll('.class-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      classTabs.querySelectorAll('.class-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      state.activeClass = tab.dataset.cls;
+      renderStudents();
+    });
+  });
+}
+
+// Check if student is in queue
+function isInQueue(student) {
+  return state.queue.some(s => s.name === student.name);
+}
+
+// Check if student has been called (in history)
+function isCalled(student) {
+  return state.history.some(h => h.student.name === student.name);
+}
+
+// Get student status
+function getStudentStatus(student) {
+  if (state.current && state.current.name === student.name) return 'current';
+  if (isInQueue(student)) return 'queue';
+  if (isCalled(student)) return 'called';
+  return 'idle';
+}
+
+// Render student cards
+function renderStudents() {
+  let filtered = STUDENT_DATA;
+  
+  // Filter by class
+  if (state.activeClass !== 'all') {
+    filtered = filtered.filter(s => s.cls === state.activeClass);
+  }
+  
+  // Filter by search
+  if (state.searchQuery) {
+    const q = state.searchQuery.toLowerCase();
+    filtered = filtered.filter(s => s.name.toLowerCase().includes(q));
+  }
+  
+  // Build HTML
+  let html = '';
+  filtered.forEach(s => {
+    const status = getStudentStatus(s);
+    let badge = '';
+    let cardClass = '';
+    
+    if (status === 'current') {
+      cardClass = 'in-queue';
+      badge = '<span class="badge badge-wait">Dipanggil</span>';
+    } else if (status === 'queue') {
+      cardClass = 'in-queue';
+      badge = '<span class="badge badge-wait">Antri</span>';
+    } else if (status === 'called') {
+      cardClass = 'called';
+      badge = '<span class="badge badge-done">✓ Selesai</span>';
+    } else {
+      badge = '<span class="badge badge-call">Panggil</span>';
+    }
+    
+    html += `<div class="student-card ${cardClass}" data-name="${s.name}" data-cls="${s.cls}">
+      <span class="name">${s.name}</span>
+      ${badge}
+    </div>`;
+  });
+  
+  studentGrid.innerHTML = html || '<div class="queue-empty" style="grid-column:1/-1">Tidak ada siswa</div>';
+  
+  // Click handlers
+  studentGrid.querySelectorAll('.student-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const name = card.dataset.name;
+      const student = STUDENT_DATA.find(s => s.name === name);
+      if (student) callStudent(student);
+    });
+  });
+}
+
+// Render queue
+function renderQueue() {
+  if (state.queue.length === 0 && !state.current) {
+    queueList.innerHTML = '<div class="queue-empty">Belum ada antrian</div>';
+  } else {
+    let html = '';
+    let num = 1;
+    state.queue.forEach(s => {
+      html += `<div class="queue-item">
+        <span class="q-num">${num}</span>
+        <span class="q-name">${s.name}</span>
+        <span style="font-size:.7rem;color:#888">${s.cls}</span>
+        <button class="q-remove" data-name="${s.name}" title="Hapus">✕</button>
+      </div>`;
+      num++;
+    });
+    queueList.innerHTML = html;
+    
+    // Remove buttons
+    queueList.querySelectorAll('.q-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeFromQueue(btn.dataset.name);
+      });
+    });
+  }
+  queueCount.textContent = `(${state.queue.length})`;
+}
+
+// Render history
+function renderHistory() {
+  if (state.history.length === 0) {
+    historyList.innerHTML = '<div class="queue-empty">Belum ada siswa terpanggil</div>';
+  } else {
+    let html = '';
+    // Show newest first
+    const reversed = [...state.history].reverse();
+    reversed.forEach(h => {
+      html += `<div class="history-item">
+        <span class="h-time">${h.time}</span>
+        <span class="h-name">${h.student.name}</span>
+        <span style="font-size:.68rem;color:#888">${h.student.cls}</span>
+        <button class="h-recall" data-name="${h.student.name}">Panggil Lagi</button>
+      </div>`;
+    });
+    historyList.innerHTML = html;
+    
+    // Recall buttons
+    historyList.querySelectorAll('.h-recall').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const name = btn.dataset.name;
+        const student = STUDENT_DATA.find(s => s.name === name);
+        if (student) callStudent(student);
+      });
+    });
+  }
+  historyCount.textContent = `(${state.history.length})`;
+}
+
+// Update now calling display
+function updateNowCalling() {
+  if (state.current) {
+    nowCalling.style.display = 'block';
+    callingName.textContent = state.current.name;
+    callingClass.textContent = 'Kelas ' + state.current.cls;
+  } else {
+    nowCalling.style.display = 'none';
+  }
+}
+
+// Full refresh
+function refreshAll() {
+  renderStudents();
+  renderQueue();
+  renderHistory();
+  updateNowCalling();
+}
+
+// ==================== AUDIO ====================
+
+function playAudio(student) {
+  return new Promise((resolve, reject) => {
+    const audioPath = student.audioPath;
+    
+    const audio = new Audio();
+    audio.preload = 'auto';
+    
+    const timeout = setTimeout(() => {
+      audio.pause();
+      audio.remove();
+      resolve(); // Resolve anyway after timeout (10s max)
+    }, 10000);
+    
+    audio.oncanplaythrough = () => {
+      audio.play().catch(() => {
+        // Fallback: try to play anyway
+        audio.play().catch(() => {});
+      });
+    };
+    
+    audio.onended = () => {
+      clearTimeout(timeout);
+      audio.remove();
+      resolve();
+    };
+    
+    audio.onerror = () => {
+      clearTimeout(timeout);
+      audio.remove();
+      // Audio file not found or error - still resolve after delay
+      console.warn('Audio not found for:', student.name, audioPath);
+      setTimeout(resolve, 500);
+    };
+    
+    // Try to load
+    audio.src = audioPath;
+    audio.load();
+    
+    // If canplaythrough doesn't fire within 1s, play anyway
+    setTimeout(() => {
+      if (!audio.ended && audio.paused && audio.readyState < 3) {
+        audio.play().catch(() => {});
+      }
+    }, 1000);
+    
+    state.audio = audio;
+  });
+}
+
+// ==================== QUEUE LOGIC ====================
+
+function callStudent(student) {
+  // Check if already in queue
+  if (isInQueue(student)) {
+    showToast('⚠️ Siswa sudah dalam antrian');
+    return;
+  }
+  
+  // Check if currently being called
+  if (state.current && state.current.name === student.name) {
+    showToast('⚠️ Siswa sedang dipanggil');
+    return;
+  }
+  
+  // Add to queue
+  state.queue.push(student);
+  renderQueue();
+  renderStudents();
+  
+  showToast(`✅ ${student.name} masuk antrian`);
+  
+  // If not currently playing, start processing
+  if (!state.isPlaying) {
+    processQueue();
+  }
+}
+
+function removeFromQueue(name) {
+  state.queue = state.queue.filter(s => s.name !== name);
+  renderQueue();
+  renderStudents();
+  showToast('🗑️ Dihapus dari antrian');
+}
+
+function clearQueue() {
+  if (state.queue.length === 0 && !state.current) return;
+  if (!confirm('Yakin ingin mengosongkan antrian?')) return;
+  
+  // Stop current audio
+  if (state.audio) {
+    state.audio.pause();
+    state.audio.remove();
+    state.audio = null;
+  }
+  
+  state.queue = [];
+  state.current = null;
+  state.isPlaying = false;
+  refreshAll();
+  showToast('🗑️ Antrian dikosongkan');
+}
+
+async function processQueue() {
+  if (state.isPlaying) return;
+  
+  while (state.queue.length > 0) {
+    state.isPlaying = true;
+    state.current = state.queue.shift();
+    
+    refreshAll();
+    
+    // Play audio
+    await playAudio(state.current);
+    
+    // Move to history with auto-clear after 2 minutes
+    const now = new Date();
+    const time = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    const entry = {student: state.current, time};
+    state.history.push(entry);
+    
+    // Auto-remove from history after 2 minutes
+    setTimeout(() => {
+      state.history = state.history.filter(h => h !== entry);
+      refreshAll();
+    }, 120000);
+    
+    state.current = null;
+    refreshAll();
+  }
+  
+  state.isPlaying = false;
+  state.audio = null;
+}
+
+function clearHistory() {
+  if (state.history.length === 0) return;
+  if (!confirm('Yakin ingin menghapus history?')) return;
+  state.history = [];
+  refreshAll();
+  showToast('🗑️ History dihapus');
+}
+
+// ==================== TOAST ====================
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
+}
+
+// ==================== SEARCH ====================
+searchInput.addEventListener('input', () => {
+  state.searchQuery = searchInput.value;
+  renderStudents();
+});
+
+// ==================== KEYBOARD SHORTCUTS ====================
+document.addEventListener('keydown', (e) => {
+  // Ctrl+F / F3: focus search
+  if ((e.ctrlKey && e.key === 'f') || e.key === 'F3') {
+    e.preventDefault();
+    searchInput.focus();
+    searchInput.select();
+  }
+});
+
+// ==================== INIT ====================
+renderTabs();
+refreshAll();
+console.log('✅ Pemanggilan Siswa SD Priangan Istiqamah - Siap');
+console.log('📋 ' + STUDENT_DATA.length + ' siswa terdaftar');
+console.log('🎵 Audio dari folder: audio/');
+</script>
+</body>
+</html>
