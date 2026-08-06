@@ -1146,6 +1146,7 @@ STUDENT_DATA.forEach(s => { s.audioPath = getAudioFile(s); });
 const state = {
   queue: [],           // Array of student objects in queue
   current: null,       // Currently calling student
+  pausedStudent: null, // Student paused due to autoplay block
   isPlaying: false,    // Audio is playing
   history: [],         // Array of {student, time}
   activeClass: 'all',  // Active class filter
@@ -1396,11 +1397,16 @@ function playAudio(student) {
       const promise = audio.play();
       if (promise && promise.catch) {
         promise.catch((err) => {
-          console.warn('Autoplay blocked, retrying...', err.name);
-          // Autoplay blocked - resolve anyway so queue continues
-          // Audio will play on next user interaction
+          console.warn('🔇 Autoplay blocked:', err.name);
+          // Pause queue and show resume banner
+          state.isPlaying = false;
+          state.pausedStudent = state.current;
+          state.current = null;
           clearTimeout(timeout);
           audio.remove();
+          const banner = document.getElementById('resumeBanner');
+          if (banner) banner.style.display = 'block';
+          refreshAll();
           resolve();
         });
       }
@@ -1497,6 +1503,14 @@ async function processQueue() {
     
     // Play audio 2x
     await playAudio(state.current);
+    
+    // If autoplay blocked, pause queue and wait for user click
+    if (!state.isPlaying && state.pausedStudent) {
+      saveState();
+      refreshAll();
+      return;
+    }
+    
     await playAudio(state.current);
     
     // Small delay between students so queue doesn't rush
@@ -1630,6 +1644,13 @@ function unlockAudio() {
   // Resume queue if waiting
   const banner = document.getElementById('resumeBanner');
   if (banner) banner.style.display = 'none';
+  
+  // Restore paused student (autoplay blocked earlier)
+  if (state.pausedStudent) {
+    state.queue.unshift(state.pausedStudent);
+    state.pausedStudent = null;
+  }
+  
   if (state.queue.length > 0 && !state.isPlaying) {
     processQueue();
   }
