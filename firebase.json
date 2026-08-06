@@ -1,0 +1,28 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/node_modules/**",
+      "**/.git/**",
+      "**/.firebaserc",
+      "**/package*.json",
+      "**/server.js",
+      "**/simulasi.py",
+      "**/siswa.txt",
+      "**/todo.txt",
+      "**/CNAME",
+      "**/README.md",
+      "**/.gitignore"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "database": {
+    "rules": "database.rules.json"
+  }
+}
