@@ -464,9 +464,11 @@ body {
 @media (max-width: 768px) {
   body {
     height: 100dvh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    padding-bottom: 56px;
   }
   .header { flex-shrink: 0; }
   .main-container {
@@ -530,12 +532,14 @@ body {
   /* Mobile bottom nav */
   .mobile-nav {
     display: flex;
-    flex-shrink: 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     background: #fff;
     border-top: 2px solid var(--border);
     z-index: 200;
     box-shadow: 0 -2px 8px rgba(0,0,0,.08);
-    position: relative;
   }
   .mobile-nav-btn {
     flex: 1;
