@@ -117,30 +117,47 @@ body {
 /* Class Tabs */
 .class-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 8px 12px;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
-  scrollbar-width: thin;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
+.class-tabs::-webkit-scrollbar { display: none; }
 .class-tab {
-  padding: 6px 14px;
-  border-radius: 16px;
-  border: 1.5px solid var(--border);
-  background: #fff;
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1.5px solid #d0d7de;
+  background: #f6f8fa;
   cursor: pointer;
   font-size: .78rem;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   transition: all .15s;
   user-select: none;
+  flex-shrink: 0;
+  letter-spacing: -.01em;
 }
-.class-tab:hover { background: #e8f0fe; border-color: var(--primary); }
+.class-tab:hover { background: #e8f0fe; border-color: #90c2f0; }
 .class-tab.active {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
+  box-shadow: 0 2px 6px rgba(13,71,161,.3);
+}
+.class-tab[data-cls="all"] {
+  background: #fff;
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 700;
+}
+.class-tab[data-cls="all"].active {
+  background: var(--primary);
+  color: #fff;
 }
 /* Student Grid */
 .student-grid {
@@ -525,8 +542,8 @@ body {
   .header-title p { font-size: .7rem; }
   .panel-header { padding: 8px 12px; }
   .panel-header h2 { font-size: .9rem; }
-  .class-tabs { padding: 6px 8px; }
-  .class-tab { padding: 5px 10px; font-size: .7rem; }
+  .class-tabs { padding: 8px 10px; gap: 6px; }
+  .class-tab { padding: 7px 14px; font-size: .73rem; border-radius: 18px; }
   .search-box { max-width: none; }
   
   /* Mobile bottom nav */
@@ -1129,6 +1146,8 @@ function renderTabs() {
       tab.classList.add('active');
       state.activeClass = tab.dataset.cls;
       renderStudents();
+      // Auto-scroll active tab into view
+      tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     });
   });
 }
