@@ -449,6 +449,98 @@ body {
 }
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } }
 @keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(20px); } }
+
+/* ==================== RESPONSIVE: MOBILE ==================== */
+@media (max-width: 768px) {
+  .main-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 130px);
+    gap: 0;
+    padding: 0;
+  }
+  .student-panel {
+    flex: 1;
+    border-radius: 0;
+    display: none;
+  }
+  .student-panel.active { display: flex; }
+  .right-panel {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+  .right-panel.active { display: flex; }
+  .queue-panel { max-height: none; flex: 1; border-radius: var(--radius); }
+  .history-panel { max-height: none; flex: 1; border-radius: var(--radius); }
+  .now-calling { margin-bottom: 8px; }
+  .student-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 4px;
+    padding: 4px 8px;
+  }
+  .student-card { padding: 10px 12px; }
+  .student-card .name { font-size: .78rem; }
+  .header { padding: 8px 12px; }
+  .header-logo { width: 40px; height: 40px; }
+  .header-title h1 { font-size: 1rem; }
+  .header-title p { font-size: .7rem; }
+  .panel-header { padding: 8px 12px; }
+  .panel-header h2 { font-size: .9rem; }
+  .class-tabs { padding: 6px 8px; }
+  .class-tab { padding: 5px 10px; font-size: .7rem; }
+  .search-box { max-width: none; }
+  
+  /* Mobile bottom nav */
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 2px solid var(--border);
+    z-index: 200;
+    box-shadow: 0 -2px 8px rgba(0,0,0,.08);
+  }
+  .mobile-nav-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    background: none;
+    font-size: .7rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    transition: all .15s;
+  }
+  .mobile-nav-btn .icon { font-size: 1.2rem; }
+  .mobile-nav-btn.active { color: var(--primary); background: #e8f0fe; }
+  .mobile-nav-btn .badge-dot {
+    position: absolute;
+    top: 4px;
+    margin-left: 18px;
+    background: var(--danger);
+    color: #fff;
+    font-size: .6rem;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Desktop: hide mobile nav */
+@media (min-width: 769px) {
+  .mobile-nav { display: none; }
+}
 </style>
 </head>
 <body>
@@ -507,9 +599,23 @@ body {
   </div>
 </div>
 
+<!-- Mobile Bottom Nav -->
+<div class="mobile-nav" id="mobileNav">
+  <button class="mobile-nav-btn active" data-tab="siswa">
+    <span class="icon">👨‍🎓</span> Siswa
+  </button>
+  <button class="mobile-nav-btn" data-tab="antrian">
+    <span class="icon">⏳</span> Antrian
+    <span class="badge-dot" id="mobileQueueBadge" style="display:none">0</span>
+  </button>
+  <button class="mobile-nav-btn" data-tab="history">
+    <span class="icon">📝</span> History
+  </button>
+</div>
+
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script>
 // ==================== FIREBASE ====================
 const firebaseConfig = {
@@ -1415,6 +1521,52 @@ function unlockAudio() {
 document.addEventListener('click', unlockAudio, {once: true});
 document.addEventListener('touchstart', unlockAudio, {once: true});
 document.addEventListener('keydown', unlockAudio, {once: true});
+
+// ==================== MOBILE NAV ====================
+const mobileNav = document.getElementById('mobileNav');
+if (mobileNav) {
+  mobileNav.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      mobileNav.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      const studentPanel = document.getElementById('studentPanel');
+      const rightPanel = document.querySelector('.right-panel');
+      if (tab === 'siswa') {
+        studentPanel.classList.add('active');
+        rightPanel.classList.remove('active');
+      } else if (tab === 'antrian') {
+        studentPanel.classList.remove('active');
+        rightPanel.classList.add('active');
+        // Show queue, hide history
+        document.getElementById('queuePanel').style.display = 'flex';
+        document.getElementById('historyPanel').style.display = 'none';
+      } else if (tab === 'history') {
+        studentPanel.classList.remove('active');
+        rightPanel.classList.add('active');
+        // Show history, hide queue
+        document.getElementById('queuePanel').style.display = 'none';
+        document.getElementById('historyPanel').style.display = 'flex';
+      }
+    });
+  });
+  
+  // Update mobile queue badge
+  const origRenderQueue = renderQueue;
+  renderQueue = function() {
+    origRenderQueue();
+    const badge = document.getElementById('mobileQueueBadge');
+    if (badge) {
+      const count = state.queue.length;
+      if (count > 0) {
+        badge.style.display = 'flex';
+        badge.textContent = count;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  };
+}
 
 // ==================== INIT ====================
 renderTabs();
