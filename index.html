@@ -159,7 +159,7 @@ body {
   padding: 8px 12px;
   background: #fafafa;
   border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  border: 1px solid #e0e0e0;
   cursor: pointer;
   transition: all .15s;
   gap: 8px;
@@ -420,8 +420,8 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
-/* Responsive */
-@media (max-width: 900px) {
+/* Responsive: narrow desktop */
+@media (max-width: 900px) and (min-width: 769px) {
   .main-container {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
@@ -462,17 +462,27 @@ body {
 
 /* ==================== RESPONSIVE: MOBILE ==================== */
 @media (max-width: 768px) {
-  .main-container {
+  body {
+    height: 100dvh;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 130px);
+    overflow: hidden;
+  }
+  .header { flex-shrink: 0; }
+  .main-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     gap: 0;
     padding: 0;
+    overflow: hidden;
+    min-height: 0;
   }
   .student-panel {
     flex: 1;
     border-radius: 0;
     display: none;
+    min-height: 0;
   }
   .student-panel.active { display: flex; }
   .right-panel {
@@ -480,6 +490,7 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: 8px;
+    min-height: 0;
   }
   .right-panel.active { display: flex; }
   .queue-panel { max-height: none; flex: 1; border-radius: var(--radius); }
@@ -489,10 +500,13 @@ body {
     grid-template-columns: 1fr;
     gap: 4px;
     padding: 4px 8px;
+    flex: 1;
+    overflow-y: auto;
   }
   .student-card {
     padding: 12px 14px;
     border-radius: 8px;
+    border-color: #d5d5d5;
   }
   .student-card .name {
     font-size: .85rem;
@@ -516,14 +530,12 @@ body {
   /* Mobile bottom nav */
   .mobile-nav {
     display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    flex-shrink: 0;
     background: #fff;
     border-top: 2px solid var(--border);
     z-index: 200;
     box-shadow: 0 -2px 8px rgba(0,0,0,.08);
+    position: relative;
   }
   .mobile-nav-btn {
     flex: 1;
