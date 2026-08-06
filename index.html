@@ -1177,7 +1177,8 @@ async function processQueue() {
     
     refreshAll();
     
-    // Play audio
+    // Play audio 2x
+    await playAudio(state.current);
     await playAudio(state.current);
     
     // Move to history with auto-clear after 2 minutes
