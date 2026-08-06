@@ -453,6 +453,10 @@ body {
     <h1>Pemanggilan Siswa</h1>
     <p>SD Priangan Istiqamah</p>
   </div>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <span id="simStatus" style="font-size:.75rem;opacity:.8;display:none"></span>
+    <button class="btn" id="simBtn" onclick="toggleSimulasi()" style="background:#fff;color:#0d47a1;font-weight:700;white-space:nowrap">🎮 Simulasi</button>
+  </div>
 </div>
 
 <!-- Main -->
@@ -1013,9 +1017,10 @@ function renderHistory() {
         <div class="history-group-header">📌 Kelas ${cls} <span style="font-weight:400;opacity:.7">(${entries.length})</span></div>`;
       entries.forEach(h => {
         const remaining = Math.max(0, Math.ceil((h.expiresAt - now) / 1000));
-        const min = Math.floor(remaining / 60);
+        const hrs = Math.floor(remaining / 3600);
+        const min = Math.floor((remaining % 3600) / 60);
         const sec = remaining % 60;
-        const timerStr = min + ':' + String(sec).padStart(2, '0');
+        const timerStr = hrs > 0 ? hrs + ':' + String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') : min + ':' + String(sec).padStart(2, '0');
         const urgent = remaining <= 10 ? ' style="color:#d93025;font-weight:700"' : '';
         html += `<div class="history-item">
           <span class="h-time">${h.time}</span>
@@ -1181,20 +1186,20 @@ async function processQueue() {
     await playAudio(state.current);
     await playAudio(state.current);
     
-    // Move to history with auto-clear after 2 minutes
+    // Move to history with auto-clear after 3 hours
     const now = new Date();
     const time = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-    const expiresAt = Date.now() + 120000;
+    const expiresAt = Date.now() + 10800000;
     const entry = {student: state.current, time, expiresAt};
     state.history.push(entry);
     saveState();
     
-    // Auto-remove from history after 2 minutes
+    // Auto-remove from history after 3 hours
     setTimeout(() => {
       state.history = state.history.filter(h => h !== entry);
       saveState();
       refreshAll();
-    }, 120000);
+    }, 10800000);
     
     state.current = null;
     refreshAll();
@@ -1283,6 +1288,63 @@ document.addEventListener('keydown', (e) => {
     searchInput.select();
   }
 });
+
+// ==================== SIMULASI ====================
+let simRunning = false;
+let simInterval = null;
+let simCount = 0;
+
+function toggleSimulasi() {
+  if (simRunning) {
+    stopSimulasi();
+  } else {
+    startSimulasi();
+  }
+}
+
+function startSimulasi() {
+  simRunning = true;
+  simCount = 0;
+  const btn = document.getElementById('simBtn');
+  const status = document.getElementById('simStatus');
+  btn.textContent = '⏹ Stop';
+  btn.style.background = '#d93025';
+  btn.style.color = '#fff';
+  status.style.display = 'inline';
+  updateSimStatus();
+  showToast('🎮 Simulasi dimulai - klik acak setiap 300ms');
+  
+  // Random clicks every 300ms (simulate ~3 orang tua/detik)
+  simInterval = setInterval(() => {
+    if (!simRunning) return;
+    // Pick random student not in queue/current
+    const available = STUDENT_DATA.filter(s => !isInQueue(s) && !(state.current && state.current.name === s.name));
+    if (available.length > 0) {
+      const student = available[Math.floor(Math.random() * available.length)];
+      callStudent(student);
+      simCount++;
+      updateSimStatus();
+    }
+  }, 300);
+}
+
+function stopSimulasi() {
+  simRunning = false;
+  const btn = document.getElementById('simBtn');
+  const status = document.getElementById('simStatus');
+  clearInterval(simInterval);
+  simInterval = null;
+  btn.textContent = '🎮 Simulasi';
+  btn.style.background = '#fff';
+  btn.style.color = '#0d47a1';
+  status.style.display = 'none';
+  showToast(`🛑 Simulasi selesai: ${simCount} panggilan`);
+}
+
+function updateSimStatus() {
+  const status = document.getElementById('simStatus');
+  if (status) status.textContent = `📊 ${simCount} panggilan | Antri: ${state.queue.length}`;
+}
 
 // ==================== INIT ====================
 renderTabs();
