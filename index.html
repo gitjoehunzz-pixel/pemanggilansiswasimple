@@ -355,6 +355,14 @@ body {
   transition: all .15s;
 }
 .history-item .h-recall:hover { background: var(--primary-dark); }
+.history-item .h-timer {
+  font-size: .68rem;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  text-align: right;
+  flex-shrink: 0;
+}
 /* Buttons */
 .btn {
   padding: 8px 16px;
@@ -968,14 +976,21 @@ function renderHistory() {
   if (state.history.length === 0) {
     historyList.innerHTML = '<div class="queue-empty">Belum ada siswa terpanggil</div>';
   } else {
+    const now = Date.now();
     let html = '';
     // Show newest first
     const reversed = [...state.history].reverse();
     reversed.forEach(h => {
+      const remaining = Math.max(0, Math.ceil((h.expiresAt - now) / 1000));
+      const min = Math.floor(remaining / 60);
+      const sec = remaining % 60;
+      const timerStr = min + ':' + String(sec).padStart(2, '0');
+      const urgent = remaining <= 10 ? ' style="color:#d93025;font-weight:700"' : '';
       html += `<div class="history-item">
         <span class="h-time">${h.time}</span>
         <span class="h-name">${h.student.name}</span>
         <span style="font-size:.68rem;color:#888">${h.student.cls}</span>
+        <span class="h-timer"${urgent}>⏱ ${timerStr}</span>
         <button class="h-recall" data-name="${h.student.name}">Panggil Lagi</button>
       </div>`;
     });
@@ -1132,7 +1147,8 @@ async function processQueue() {
     // Move to history with auto-clear after 2 minutes
     const now = new Date();
     const time = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-    const entry = {student: state.current, time};
+    const expiresAt = Date.now() + 120000;
+    const entry = {student: state.current, time, expiresAt};
     state.history.push(entry);
     
     // Auto-remove from history after 2 minutes
@@ -1187,6 +1203,10 @@ document.addEventListener('keydown', (e) => {
 // ==================== INIT ====================
 renderTabs();
 refreshAll();
+// Tick history countdown every second
+setInterval(() => {
+  if (state.history.length > 0) renderHistory();
+}, 1000);
 console.log('✅ Pemanggilan Siswa SD Priangan Istiqamah - Siap');
 console.log('📋 ' + STUDENT_DATA.length + ' siswa terdaftar');
 console.log('🎵 Audio dari folder: audio/');
