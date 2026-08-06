@@ -363,6 +363,21 @@ body {
   text-align: right;
   flex-shrink: 0;
 }
+.history-group {
+  margin-bottom: 2px;
+}
+.history-group-header {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--primary);
+  padding: 6px 10px;
+  background: #e8f0fe;
+  border-radius: var(--radius-sm);
+  margin-bottom: 2px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
 /* Buttons */
 .btn {
   padding: 8px 16px;
@@ -971,28 +986,45 @@ function renderQueue() {
   queueCount.textContent = `(${state.queue.length})`;
 }
 
-// Render history
+// Render history - grouped by class
 function renderHistory() {
   if (state.history.length === 0) {
     historyList.innerHTML = '<div class="queue-empty">Belum ada siswa terpanggil</div>';
   } else {
     const now = Date.now();
+    // Group by class
+    const groups = {};
+    state.history.forEach(h => {
+      const cls = h.student.cls;
+      if (!groups[cls]) groups[cls] = [];
+      groups[cls].push(h);
+    });
+    // Sort class keys: 1A,1B,1C,2A,2B,2C,3A,3B,4A,4B,5A,5B,6
+    const clsOrder = ['1 A','1 B','1 C','2 A','2 B','2 C','3 A','3 B','4A','4B','5A','5B','6'];
+    const sortedKeys = Object.keys(groups).sort((a,b) => {
+      const ai = clsOrder.indexOf(a), bi = clsOrder.indexOf(b);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    });
+    
     let html = '';
-    // Show newest first
-    const reversed = [...state.history].reverse();
-    reversed.forEach(h => {
-      const remaining = Math.max(0, Math.ceil((h.expiresAt - now) / 1000));
-      const min = Math.floor(remaining / 60);
-      const sec = remaining % 60;
-      const timerStr = min + ':' + String(sec).padStart(2, '0');
-      const urgent = remaining <= 10 ? ' style="color:#d93025;font-weight:700"' : '';
-      html += `<div class="history-item">
-        <span class="h-time">${h.time}</span>
-        <span class="h-name">${h.student.name}</span>
-        <span style="font-size:.68rem;color:#888">${h.student.cls}</span>
-        <span class="h-timer"${urgent}>⏱ ${timerStr}</span>
-        <button class="h-recall" data-name="${h.student.name}">Panggil Lagi</button>
-      </div>`;
+    sortedKeys.forEach(cls => {
+      const entries = [...groups[cls]].reverse(); // newest first within group
+      html += `<div class="history-group">
+        <div class="history-group-header">📌 Kelas ${cls} <span style="font-weight:400;opacity:.7">(${entries.length})</span></div>`;
+      entries.forEach(h => {
+        const remaining = Math.max(0, Math.ceil((h.expiresAt - now) / 1000));
+        const min = Math.floor(remaining / 60);
+        const sec = remaining % 60;
+        const timerStr = min + ':' + String(sec).padStart(2, '0');
+        const urgent = remaining <= 10 ? ' style="color:#d93025;font-weight:700"' : '';
+        html += `<div class="history-item">
+          <span class="h-time">${h.time}</span>
+          <span class="h-name">${h.student.name}</span>
+          <span class="h-timer"${urgent}>⏱ ${timerStr}</span>
+          <button class="h-recall" data-name="${h.student.name}">Panggil Lagi</button>
+        </div>`;
+      });
+      html += '</div>';
     });
     historyList.innerHTML = html;
     
