@@ -21,6 +21,7 @@ Perintah:
 import asyncio
 import json
 import random
+import re
 import sys
 import threading
 import time
@@ -37,27 +38,33 @@ SCRIPT_DIR = Path(__file__).parent
 def load_students():
     siswa_file = SCRIPT_DIR / "siswa.txt"
     students = []
+    current_cls = "?"
+    
     if siswa_file.exists():
         with open(siswa_file, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if not line or line.startswith("#"):
+                if not line:
                     continue
-                # Format: "Nama Siswa" or "Nama Siswa | Kelas" or "Nama Siswa | Kelas | Kode"
-                parts = [p.strip() for p in line.split("|")]
-                name = parts[0]
-                cls = parts[1] if len(parts) > 1 else "?"
-                code = parts[2] if len(parts) > 2 else cls.lower().replace(" ", "")
-                students.append({"name": name, "cls": cls, "code": code})
+                # Class header: "kelas 1 A :" or "kelas 1A :"
+                if line.lower().startswith("kelas"):
+                    # Extract class: "kelas 1 A :" -> "1 A"
+                    cls_part = line[5:].strip().rstrip(":").strip()
+                    current_cls = cls_part
+                    continue
+                # Student line: "1. Nama Siswa" or "1.Nama Siswa"
+                # Remove leading number and dot
+                match = re.match(r'^\d+\.?\s*(.+)', line)
+                if match:
+                    name = match.group(1).strip()
+                    code = current_cls.lower().replace(" ", "")
+                    students.append({"name": name, "cls": current_cls, "code": code})
     else:
         # Fallback sample data
         students = [
             {"name": "Abimana Praga Aksara", "cls": "1 A", "code": "1a"},
             {"name": "Abinaya Keano Parasyad", "cls": "1 A", "code": "1a"},
             {"name": "Ahmad Haidar Ali Darmawan", "cls": "1 A", "code": "1a"},
-            {"name": "Aiyra Al Lathiif", "cls": "1 A", "code": "1a"},
-            {"name": "Alira Attahiyya Albiruni", "cls": "1 A", "code": "1a"},
-            {"name": "Almeer Tsabtaqi Haaziq", "cls": "1 A", "code": "1a"},
             {"name": "Akleema Meysharuna Kinara", "cls": "1 B", "code": "1b"},
             {"name": "Aldebaran Maliq Pramudya", "cls": "1 B", "code": "1b"},
             {"name": "Abyan Hadiyan Alghifari", "cls": "2 A", "code": "2a"},
