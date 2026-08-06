@@ -363,6 +363,13 @@ body {
   text-align: right;
   flex-shrink: 0;
 }
+.h-timer.blink {
+  animation: timerBlink .5s infinite;
+}
+@keyframes timerBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
 .history-group {
   margin-bottom: 2px;
 }
@@ -452,10 +459,6 @@ body {
   <div class="header-title">
     <h1>Pemanggilan Siswa</h1>
     <p>SD Priangan Istiqamah</p>
-  </div>
-  <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-    <span id="simStatus" style="font-size:.75rem;opacity:.8;display:none"></span>
-    <button class="btn" id="simBtn" onclick="toggleSimulasi()" style="background:#fff;color:#0d47a1;font-weight:700;white-space:nowrap">🎮 Simulasi</button>
   </div>
 </div>
 
@@ -995,7 +998,6 @@ function renderHistory() {
   if (state.history.length === 0) {
     historyList.innerHTML = '<div class="queue-empty">Belum ada siswa terpanggil</div>';
   } else {
-    const now = Date.now();
     // Group by class
     const groups = {};
     state.history.forEach(h => {
@@ -1016,16 +1018,10 @@ function renderHistory() {
       html += `<div class="history-group">
         <div class="history-group-header">📌 Kelas ${cls} <span style="font-weight:400;opacity:.7">(${entries.length})</span></div>`;
       entries.forEach(h => {
-        const remaining = Math.max(0, Math.ceil((h.expiresAt - now) / 1000));
-        const hrs = Math.floor(remaining / 3600);
-        const min = Math.floor((remaining % 3600) / 60);
-        const sec = remaining % 60;
-        const timerStr = hrs > 0 ? hrs + ':' + String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') : min + ':' + String(sec).padStart(2, '0');
-        const urgent = remaining <= 10 ? ' style="color:#d93025;font-weight:700"' : '';
-        html += `<div class="history-item">
+        html += `<div class="history-item" data-name="${h.student.name}">
           <span class="h-time">${h.time}</span>
           <span class="h-name">${h.student.name}</span>
-          <span class="h-timer"${urgent}>⏱ ${timerStr}</span>
+          <span class="h-timer"></span>
           <button class="h-recall" data-name="${h.student.name}">Panggil Lagi</button>
         </div>`;
       });
@@ -1044,6 +1040,8 @@ function renderHistory() {
     });
   }
   historyCount.textContent = `(${state.history.length})`;
+  // Show timers immediately
+  if (state.history.length > 0) tickTimers();
 }
 
 // Update now calling display
@@ -1068,7 +1066,7 @@ function refreshAll() {
 // ==================== AUDIO ====================
 
 function playAudio(student) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const audioPath = student.audioPath;
     
     const audio = new Audio();
@@ -1077,40 +1075,50 @@ function playAudio(student) {
     const timeout = setTimeout(() => {
       audio.pause();
       audio.remove();
-      resolve(); // Resolve anyway after timeout (10s max)
+      resolve();
     }, 10000);
     
-    audio.oncanplaythrough = () => {
-      audio.play().catch(() => {
-        // Fallback: try to play anyway
-        audio.play().catch(() => {});
-      });
-    };
-    
-    audio.onended = () => {
+    const cleanup = () => {
       clearTimeout(timeout);
       audio.remove();
       resolve();
     };
     
+    audio.onended = cleanup;
+    
     audio.onerror = () => {
       clearTimeout(timeout);
       audio.remove();
-      // Audio file not found or error - still resolve after delay
       console.warn('Audio not found for:', student.name, audioPath);
       setTimeout(resolve, 500);
     };
     
-    // Try to load
+    // Try to play
     audio.src = audioPath;
     audio.load();
     
-    // If canplaythrough doesn't fire within 1s, play anyway
-    setTimeout(() => {
-      if (!audio.ended && audio.paused && audio.readyState < 3) {
-        audio.play().catch(() => {});
+    const tryPlay = () => {
+      const promise = audio.play();
+      if (promise && promise.catch) {
+        promise.catch((err) => {
+          console.warn('Autoplay blocked, retrying...', err.name);
+          // Autoplay blocked - resolve anyway so queue continues
+          // Audio will play on next user interaction
+          clearTimeout(timeout);
+          audio.remove();
+          resolve();
+        });
       }
-    }, 1000);
+    };
+    
+    audio.oncanplaythrough = tryPlay;
+    
+    // Fallback: if canplaythrough doesn't fire
+    setTimeout(() => {
+      if (!audio.ended && audio.paused && audio.readyState >= 2) {
+        tryPlay();
+      }
+    }, 800);
     
     state.audio = audio;
   });
@@ -1289,75 +1297,85 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ==================== SIMULASI ====================
-let simRunning = false;
-let simInterval = null;
-let simCount = 0;
+// ==================== AUDIO UNLOCK (for browser autoplay policy) ====================
+let audioUnlocked = false;
 
-function toggleSimulasi() {
-  if (simRunning) {
-    stopSimulasi();
-  } else {
-    startSimulasi();
+function unlockAudio() {
+  if (audioUnlocked) return;
+  // Play silent audio to unlock audio context
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const buf = ctx.createBuffer(1, 1, 22050);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+  audioUnlocked = true;
+  ctx.close();
+  
+  // Resume queue if waiting
+  const banner = document.getElementById('resumeBanner');
+  if (banner) banner.style.display = 'none';
+  if (state.queue.length > 0 && !state.isPlaying) {
+    processQueue();
   }
 }
 
-function startSimulasi() {
-  simRunning = true;
-  simCount = 0;
-  const btn = document.getElementById('simBtn');
-  const status = document.getElementById('simStatus');
-  btn.textContent = '⏹ Stop';
-  btn.style.background = '#d93025';
-  btn.style.color = '#fff';
-  status.style.display = 'inline';
-  updateSimStatus();
-  showToast('🎮 Simulasi dimulai - klik acak setiap 300ms');
-  
-  // Random clicks every 300ms (simulate ~3 orang tua/detik)
-  simInterval = setInterval(() => {
-    if (!simRunning) return;
-    // Pick random student not in queue/current
-    const available = STUDENT_DATA.filter(s => !isInQueue(s) && !(state.current && state.current.name === s.name));
-    if (available.length > 0) {
-      const student = available[Math.floor(Math.random() * available.length)];
-      callStudent(student);
-      simCount++;
-      updateSimStatus();
-    }
-  }, 300);
-}
-
-function stopSimulasi() {
-  simRunning = false;
-  const btn = document.getElementById('simBtn');
-  const status = document.getElementById('simStatus');
-  clearInterval(simInterval);
-  simInterval = null;
-  btn.textContent = '🎮 Simulasi';
-  btn.style.background = '#fff';
-  btn.style.color = '#0d47a1';
-  status.style.display = 'none';
-  showToast(`🛑 Simulasi selesai: ${simCount} panggilan`);
-}
-
-function updateSimStatus() {
-  const status = document.getElementById('simStatus');
-  if (status) status.textContent = `📊 ${simCount} panggilan | Antri: ${state.queue.length}`;
-}
+// Unlock on first user interaction
+document.addEventListener('click', unlockAudio, {once: true});
+document.addEventListener('touchstart', unlockAudio, {once: true});
+document.addEventListener('keydown', unlockAudio, {once: true});
 
 // ==================== INIT ====================
 renderTabs();
 loadState();
 refreshAll();
-// Resume queue processing if queue exists after reload
+
+// If queue exists after reload, show resume banner
 if (state.queue.length > 0 && !state.isPlaying) {
-  processQueue();
+  const banner = document.createElement('div');
+  banner.id = 'resumeBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center;cursor:pointer';
+  banner.innerHTML = `<div style="background:#fff;padding:24px 40px;border-radius:16px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:pulse 1.5s infinite">
+    <div style="font-size:2rem;margin-bottom:8px">🔊</div>
+    <div style="font-weight:700;font-size:1.1rem;color:#0d47a1">Klik untuk melanjutkan antrian</div>
+    <div style="font-size:.8rem;color:#888;margin-top:4px">${state.queue.length} siswa menunggu</div>
+  </div>`;
+  banner.addEventListener('click', unlockAudio);
+  document.body.appendChild(banner);
 }
-// Tick history countdown every second
+
+// Tick history countdown every second (update timers only, no re-render)
 setInterval(() => {
-  if (state.history.length > 0) renderHistory();
+  if (state.history.length > 0) tickTimers();
 }, 1000);
+
+function tickTimers() {
+  const now = Date.now();
+  const items = historyList.querySelectorAll('.history-item');
+  items.forEach(item => {
+    const name = item.dataset.name;
+    const entry = state.history.find(h => h.student.name === name);
+    if (!entry) return;
+    const remaining = Math.max(0, Math.ceil((entry.expiresAt - now) / 1000));
+    const hrs = Math.floor(remaining / 3600);
+    const min = Math.floor((remaining % 3600) / 60);
+    const sec = remaining % 60;
+    const timerStr = hrs > 0 ? hrs + ':' + String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') : min + ':' + String(sec).padStart(2, '0');
+    const timerEl = item.querySelector('.h-timer');
+    if (timerEl) {
+      timerEl.textContent = '⏱ ' + timerStr;
+      if (remaining <= 10) {
+        timerEl.style.color = '#d93025';
+        timerEl.style.fontWeight = '700';
+        timerEl.classList.add('blink');
+      } else {
+        timerEl.style.color = '#888';
+        timerEl.style.fontWeight = 'normal';
+        timerEl.classList.remove('blink');
+      }
+    }
+  });
+}
 console.log('✅ Pemanggilan Siswa SD Priangan Istiqamah - Siap');
 console.log('📋 ' + STUDENT_DATA.length + ' siswa terdaftar');
 console.log('🎵 Audio dari folder: audio/');
