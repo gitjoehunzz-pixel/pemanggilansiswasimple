@@ -507,25 +507,75 @@ body {
   </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database-compat.js"></script>
 <script>
-// ==================== SERVER MODE (Socket.IO) ====================
-let serverMode = false;
-let socket = null;
+// ==================== FIREBASE ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyCe3wwUB88mfo15xhEIGin86x3PZYWNBmo",
+  authDomain: "sdpi-bee96.firebaseapp.com",
+  projectId: "sdpi-bee96",
+  storageBucket: "sdpi-bee96.firebasestorage.app",
+  messagingSenderId: "126328001169",
+  appId: "1:126328001169:web:71a5d8510e3ae2c8f8a530",
+  measurementId: "G-2FKTQN7146"
+};
 
-try {
-  socket = io();
-  socket.on('connect', () => {
-    serverMode = true;
-    socket.emit('register', { type: 'display' });
-    console.log('🖥 Connected to server as DISPLAY');
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+console.log('🔥 Firebase connected:', firebaseConfig.projectId);
+
+// ==================== FIREBASE LISTENERS ====================
+// Listen for new items in queue (from HP)
+db.ref('queue').on('child_added', snap => {
+  const student = snap.val();
+  if (!student) return;
+  // Find matching student from our data
+  const fullStudent = STUDENT_DATA.find(s => s.name === student.name);
+  if (!fullStudent) return;
+  // Check if already in local queue
+  if (state.queue.some(s => s.name === fullStudent.name)) return;
+  if (state.current && state.current.name === fullStudent.name) return;
+  // Add to local queue
+  state.queue.push(fullStudent);
+  saveState();
+  renderQueue();
+  renderStudents();
+  if (!state.isPlaying) processQueue();
+});
+
+// Also allow local calls (clicking on computer) to push to Firebase
+// so HP can see the queue status
+function syncQueueToFirebase() {
+  // Remove all from Firebase queue, re-add from local
+  db.ref('queue').once('value').then(snap => {
+    const promises = [];
+    snap.forEach(child => promises.push(child.ref.remove()));
+    return Promise.all(promises);
+  }).then(() => {
+    state.queue.forEach(s => {
+      db.ref('queue').push({ name: s.name, cls: s.cls, code: s.code, timestamp: Date.now() });
+    });
+  }).catch(() => {});
+}
+
+function syncCurrentToFirebase(student) {
+  if (student) {
+    db.ref('current').set({ name: student.name, cls: student.cls, code: student.code, timestamp: Date.now() });
+  } else {
+    db.ref('current').remove();
+  }
+}
+
+function syncHistoryToFirebase(student, expiresAt) {
+  db.ref('history').push({
+    name: student.name,
+    cls: student.cls,
+    code: student.code,
+    timestamp: Date.now(),
+    expiresAt: expiresAt
   });
-  socket.on('disconnect', () => {
-    serverMode = false;
-    console.log('⚠️ Server disconnected, using local mode');
-  });
-} catch(e) {
-  console.log('📋 Running in standalone mode');
 }
 
 // ==================== STUDENT DATA ====================
@@ -1158,6 +1208,7 @@ function callStudent(student) {
   // Add to queue
   state.queue.push(student);
   saveState();
+  syncQueueToFirebase();
   renderQueue();
   renderStudents();
   
@@ -1172,6 +1223,7 @@ function callStudent(student) {
 function removeFromQueue(name) {
   state.queue = state.queue.filter(s => s.name !== name);
   saveState();
+  syncQueueToFirebase();
   renderQueue();
   renderStudents();
   showToast('🗑️ Dihapus dari antrian');
@@ -1192,6 +1244,8 @@ function clearQueue() {
   state.current = null;
   state.isPlaying = false;
   saveState();
+  syncQueueToFirebase();
+  syncCurrentToFirebase(null);
   refreshAll();
   showToast('🗑️ Antrian dikosongkan');
 }
@@ -1203,6 +1257,10 @@ async function processQueue() {
     state.isPlaying = true;
     state.current = state.queue.shift();
     saveState();
+    
+    // Sync to Firebase: set current, remove from queue
+    syncCurrentToFirebase(state.current);
+    syncQueueToFirebase();
     
     refreshAll();
     
@@ -1217,6 +1275,10 @@ async function processQueue() {
     const entry = {student: state.current, time, expiresAt};
     state.history.push(entry);
     saveState();
+    
+    // Sync to Firebase: clear current, add to history
+    syncCurrentToFirebase(null);
+    syncHistoryToFirebase(state.current, expiresAt);
     
     // Auto-remove from history after 3 hours
     setTimeout(() => {
@@ -1313,61 +1375,8 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ==================== SERVER EVENT HANDLERS ====================
-if (socket) {
-  socket.on('stateUpdate', (data) => {
-    if (!serverMode) return;
-    // Sync state from server
-    state.queue = data.queue || [];
-    state.current = data.current || null;
-    state.history = (data.history || []).map(h => {
-      // Restore student object reference
-      const student = STUDENT_DATA.find(s => s.name === h.student?.name || s.name === h.name);
-      return { student, time: h.time, expiresAt: (h.timestamp || Date.now()) + 3*60*60*1000 };
-    });
-    state.isPlaying = data.isPlaying || false;
-    refreshAll();
-  });
-  
-  socket.on('playAudio', (data) => {
-    if (!serverMode) return;
-    const { student, audioPath, repeat } = data;
-    // Play audio on this display
-    playAudioFromPath(student, audioPath, repeat);
-  });
-  
-  socket.on('clientsUpdate', (clients) => {
-    console.log('📱 Connected devices:', clients.length);
-  });
-}
-
-// Play audio from server command
-async function playAudioFromPath(student, audioPath, repeat) {
-  for (let i = 0; i < (repeat || 1); i++) {
-    await new Promise(resolve => {
-      const audio = new Audio();
-      audio.preload = 'auto';
-      const timeout = setTimeout(() => { audio.remove(); resolve(); }, 10000);
-      audio.onended = () => { clearTimeout(timeout); audio.remove(); resolve(); };
-      audio.onerror = () => { clearTimeout(timeout); audio.remove(); setTimeout(resolve, 500); };
-      audio.src = audioPath;
-      audio.load();
-      setTimeout(() => { if (!audio.ended && audio.paused) audio.play().catch(() => {}); }, 200);
-    });
-  }
-  // Notify server audio done
-  if (socket) socket.emit('audioDone');
-}
-
-// Override callStudent to use server if connected
-const originalCallStudent = callStudent;
-callStudent = function(student) {
-  if (serverMode && socket) {
-    socket.emit('callStudent', student);
-  } else {
-    originalCallStudent(student);
-  }
-};
+// ==================== FIREBASE SYNC (called from processQueue) ====================
+// These are defined above. processQueue calls them inline.
 
 // ==================== AUDIO UNLOCK (for browser autoplay policy) ====================
 let audioUnlocked = false;

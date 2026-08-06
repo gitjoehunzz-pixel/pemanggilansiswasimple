@@ -70,6 +70,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  padding-bottom: 70px;
 }
 .student-btn {
   display: flex;
@@ -169,8 +170,24 @@ body {
   <div class="stat">📝 History <span id="historyBadge">0</span></div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database-compat.js"></script>
 <script>
+// ==================== FIREBASE ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyCe3wwUB88mfo15xhEIGin86x3PZYWNBmo",
+  authDomain: "sdpi-bee96.firebaseapp.com",
+  projectId: "sdpi-bee96",
+  storageBucket: "sdpi-bee96.firebasestorage.app",
+  messagingSenderId: "126328001169",
+  appId: "1:126328001169:web:71a5d8510e3ae2c8f8a530",
+  measurementId: "G-2FKTQN7146"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 // ==================== STUDENT DATA ====================
 const STUDENT_DATA = [
   {name:"Abimana Praga Aksara", cls:"1 A", code:"1a"},{name:"Abinaya Keano Parasyad", cls:"1 A", code:"1a"},{name:"Ahmad Haidar Ali Darmawan", cls:"1 A", code:"1a"},{name:"Aiyra Al Lathiif", cls:"1 A", code:"1a"},{name:"Alira Attahiyya Albiruni", cls:"1 A", code:"1a"},{name:"Almeer Tsabtaqi Haaziq", cls:"1 A", code:"1a"},{name:"Areta Nirankara Suryadi", cls:"1 A", code:"1a"},{name:"Athmar Mahathir Hidayat", cls:"1 A", code:"1a"},{name:"Aurozalea Kaina Isar", cls:"1 A", code:"1a"},{name:"Clarish Nafeesa Satrya", cls:"1 A", code:"1a"},{name:"Clemira Manha Kalila", cls:"1 A", code:"1a"},{name:"Enzo Melviano Giel", cls:"1 A", code:"1a"},{name:"Gwen Callista Adreena", cls:"1 A", code:"1a"},{name:"Kalandra Xaquille Calief Rinaldhi", cls:"1 A", code:"1a"},{name:"Kalluna Kamidya Iskandar", cls:"1 A", code:"1a"},{name:"Kasyafani Fatih Alkarim", cls:"1 A", code:"1a"},{name:"Kavin Aulian Luthfi", cls:"1 A", code:"1a"},{name:"Lafizia Randika Fallah", cls:"1 A", code:"1a"},{name:"Lavina Noushin Boerhan", cls:"1 A", code:"1a"},{name:"Laylanafasya Anakahdin", cls:"1 A", code:"1a"},{name:"Muhammad Radeya Shakti Irdiansyah", cls:"1 A", code:"1a"},{name:"Muhammad Zayn Alhanan", cls:"1 A", code:"1a"},{name:"Namira Gya Falisha", cls:"1 A", code:"1a"},{name:"Naufal Zavian Alfarisqy", cls:"1 A", code:"1a"},{name:"Raffasya Ghaniy Wibowo", cls:"1 A", code:"1a"},{name:"Zhafran Tama Pranoto", cls:"1 A", code:"1a"},
@@ -188,23 +205,44 @@ const STUDENT_DATA = [
   {name:"Aisha Kamila Muttaqin", cls:"6", code:"6a"},{name:"Al Farabi Awalul Haq", cls:"6", code:"6a"},{name:"Annisa Fathiyyah", cls:"6", code:"6a"},{name:"Aura Latisha Aquina Sholehah", cls:"6", code:"6a"},{name:"Banu Mibras Naufal", cls:"6", code:"6a"},{name:"Bintang Chico Wijaya Junior", cls:"6", code:"6a"},{name:"Bintang Khalif Rizal", cls:"6", code:"6a"},{name:"Cordelia Khansa Rafani", cls:"6", code:"6a"},{name:"Daffandra Arsenio Gunawan", cls:"6", code:"6a"},{name:"Kemina Gienka Setyawan", cls:"6", code:"6a"},{name:"Kennes Ayunindya Bismantara", cls:"6", code:"6a"},{name:"Laika Aprillia Sulaeman", cls:"6", code:"6a"},{name:"Muhammad Raditya Satriatama Andrenike", cls:"6", code:"6a"},{name:"Nacita Adzkia", cls:"6", code:"6a"},{name:"Naura Verisha Jatnika", cls:"6", code:"6a"},{name:"Qiandra Allody Aksalia", cls:"6", code:"6a"},{name:"Raifa Fathina Azkia", cls:"6", code:"6a"},{name:"Ratu Fathia Yuniar", cls:"6", code:"6a"},{name:"Razarine Zabdan Putri Waluya", cls:"6", code:"6a"},{name:"Sandji Arsyad", cls:"6", code:"6a"},{name:"Steve Aprilio Wijaya", cls:"6", code:"6a"},{name:"Tanisha Diandra Putri", cls:"6", code:"6a"},{name:"Yashvir Dilan", cls:"6", code:"6a"},
 ];
 
-// ==================== SOCKET.IO ====================
-const socket = io();
+// ==================== FIREBASE STATE ====================
 let queue = [];
 let current = null;
 let history = [];
 
-socket.on('connect', () => {
-  socket.emit('register', { type: 'phone' });
-  console.log('📱 Connected as PHONE');
-});
-
-socket.on('stateUpdate', (data) => {
-  queue = data.queue || [];
-  current = data.current;
-  history = data.history || [];
+// Listen to current
+db.ref('current').on('value', snap => {
+  current = snap.val();
   renderStatusBar();
   renderStudents();
+});
+
+// Listen to queue
+db.ref('queue').on('value', snap => {
+  queue = [];
+  const data = snap.val();
+  if (data) {
+    Object.keys(data).forEach(key => {
+      queue.push({ ...data[key], _fbKey: key });
+    });
+  }
+  renderStatusBar();
+  renderStudents();
+});
+
+// Listen to history
+db.ref('history').on('value', snap => {
+  history = [];
+  const data = snap.val();
+  if (data) {
+    const now = Date.now();
+    Object.keys(data).forEach(key => {
+      if (data[key].expiresAt > now) {
+        history.push({ ...data[key], _fbKey: key });
+      }
+    });
+  }
+  renderStatusBar();
 });
 
 // ==================== RENDER ====================
@@ -259,9 +297,14 @@ function renderStudents() {
       }
       const student = STUDENT_DATA.find(s => s.name === name);
       if (student) {
-        socket.emit('callStudent', student);
+        // Push to Firebase
+        db.ref('queue').push({
+          name: student.name,
+          cls: student.cls,
+          code: student.code,
+          timestamp: Date.now()
+        });
         showToast('✅ ' + student.name);
-        // Haptic feedback
         if (navigator.vibrate) navigator.vibrate(50);
       }
     });
@@ -294,6 +337,9 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
 renderTabs();
 renderStudents();
 renderStatusBar();
+
+console.log('📱 Panggil via Firebase siap!');
+console.log('🔗 Project:', firebaseConfig.projectId);
 </script>
 </body>
 </html>
