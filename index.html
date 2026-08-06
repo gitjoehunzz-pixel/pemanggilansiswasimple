@@ -450,6 +450,16 @@ body {
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } }
 @keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(20px); } }
 
+/* ==================== RESPONSIVE: TABLET (landscape) ==================== */
+@media (min-width: 401px) and (max-width: 768px) {
+  .student-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 6px 10px;
+  }
+  .student-card .name { font-size: .82rem; white-space: normal; }
+}
+
 /* ==================== RESPONSIVE: MOBILE ==================== */
 @media (max-width: 768px) {
   .main-container {
@@ -476,12 +486,23 @@ body {
   .history-panel { max-height: none; flex: 1; border-radius: var(--radius); }
   .now-calling { margin-bottom: 8px; }
   .student-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: 1fr;
     gap: 4px;
     padding: 4px 8px;
   }
-  .student-card { padding: 10px 12px; }
-  .student-card .name { font-size: .78rem; }
+  .student-card {
+    padding: 12px 14px;
+    border-radius: 8px;
+  }
+  .student-card .name {
+    font-size: .85rem;
+    white-space: normal;
+    line-height: 1.3;
+  }
+  .student-card .badge {
+    font-size: .7rem;
+    padding: 3px 10px;
+  }
   .header { padding: 8px 12px; }
   .header-logo { width: 40px; height: 40px; }
   .header-title h1 { font-size: 1rem; }
@@ -557,7 +578,7 @@ body {
 <!-- Main -->
 <div class="main-container">
   <!-- Student Panel -->
-  <div class="student-panel" id="studentPanel">
+  <div class="student-panel active" id="studentPanel">
     <div class="panel-header">
       <h2>📋 Daftar Siswa</h2>
       <div class="search-box">
@@ -1547,6 +1568,11 @@ document.addEventListener('keydown', unlockAudio, {once: true});
 // ==================== MOBILE NAV ====================
 const mobileNav = document.getElementById('mobileNav');
 if (mobileNav) {
+  // Set initial state: siswa tab active
+  document.getElementById('studentPanel').classList.add('active');
+  const rightPanel = document.querySelector('.right-panel');
+  if (rightPanel) rightPanel.classList.remove('active');
+  
   mobileNav.querySelectorAll('.mobile-nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       mobileNav.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
