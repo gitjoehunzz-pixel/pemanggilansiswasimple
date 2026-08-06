@@ -712,6 +712,38 @@ testChannel.onmessage = (e) => {
   addToLocalQueue(student, '_local_' + Date.now());
 };
 
+// ==================== LOCAL TEST MODE (WebSocket - Python tester.py) ====================
+// Connect to tester.py WebSocket server for offline stress testing
+(function initTestWebSocket() {
+  try {
+    const testWs = new WebSocket('ws://localhost:8765');
+    testWs.onopen = () => {
+      console.log('🧪 Test WebSocket connected (tester.py)');
+      testWs.send(JSON.stringify({ type: 'hello' }));
+    };
+    testWs.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.type === 'call') {
+        console.log('📥 Python test call:', data.name);
+        addToLocalQueue(data, '_py_' + Date.now());
+        testWs.send(JSON.stringify({ type: 'ack', name: data.name }));
+      } else if (data.type === 'clear') {
+        console.log('🧹 Python clear command');
+        state.queue = [];
+        state.current = null;
+        state.isPlaying = false;
+        if (state.audio) { state.audio.pause(); state.audio.remove(); state.audio = null; }
+        saveState();
+        refreshAll();
+      }
+    };
+    testWs.onclose = () => console.log('🧪 Test WebSocket disconnected');
+    testWs.onerror = () => {}; // Silently ignore (tester.py not running)
+  } catch(e) {
+    // Ignore — tester.py not running
+  }
+})();
+
 // Shared helper: add student to queue from any source
 function addToLocalQueue(student, sourceKey) {
   // Find matching student from our data
