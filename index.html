@@ -507,7 +507,27 @@ body {
   </div>
 </div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
+// ==================== SERVER MODE (Socket.IO) ====================
+let serverMode = false;
+let socket = null;
+
+try {
+  socket = io();
+  socket.on('connect', () => {
+    serverMode = true;
+    socket.emit('register', { type: 'display' });
+    console.log('🖥 Connected to server as DISPLAY');
+  });
+  socket.on('disconnect', () => {
+    serverMode = false;
+    console.log('⚠️ Server disconnected, using local mode');
+  });
+} catch(e) {
+  console.log('📋 Running in standalone mode');
+}
+
 // ==================== STUDENT DATA ====================
 // Parsed from siswa.txt - class code mapping for audio files
 const STUDENT_DATA = [
@@ -1292,6 +1312,62 @@ document.addEventListener('keydown', (e) => {
     searchInput.select();
   }
 });
+
+// ==================== SERVER EVENT HANDLERS ====================
+if (socket) {
+  socket.on('stateUpdate', (data) => {
+    if (!serverMode) return;
+    // Sync state from server
+    state.queue = data.queue || [];
+    state.current = data.current || null;
+    state.history = (data.history || []).map(h => {
+      // Restore student object reference
+      const student = STUDENT_DATA.find(s => s.name === h.student?.name || s.name === h.name);
+      return { student, time: h.time, expiresAt: (h.timestamp || Date.now()) + 3*60*60*1000 };
+    });
+    state.isPlaying = data.isPlaying || false;
+    refreshAll();
+  });
+  
+  socket.on('playAudio', (data) => {
+    if (!serverMode) return;
+    const { student, audioPath, repeat } = data;
+    // Play audio on this display
+    playAudioFromPath(student, audioPath, repeat);
+  });
+  
+  socket.on('clientsUpdate', (clients) => {
+    console.log('📱 Connected devices:', clients.length);
+  });
+}
+
+// Play audio from server command
+async function playAudioFromPath(student, audioPath, repeat) {
+  for (let i = 0; i < (repeat || 1); i++) {
+    await new Promise(resolve => {
+      const audio = new Audio();
+      audio.preload = 'auto';
+      const timeout = setTimeout(() => { audio.remove(); resolve(); }, 10000);
+      audio.onended = () => { clearTimeout(timeout); audio.remove(); resolve(); };
+      audio.onerror = () => { clearTimeout(timeout); audio.remove(); setTimeout(resolve, 500); };
+      audio.src = audioPath;
+      audio.load();
+      setTimeout(() => { if (!audio.ended && audio.paused) audio.play().catch(() => {}); }, 200);
+    });
+  }
+  // Notify server audio done
+  if (socket) socket.emit('audioDone');
+}
+
+// Override callStudent to use server if connected
+const originalCallStudent = callStudent;
+callStudent = function(student) {
+  if (serverMode && socket) {
+    socket.emit('callStudent', student);
+  } else {
+    originalCallStudent(student);
+  }
+};
 
 // ==================== AUDIO UNLOCK (for browser autoplay policy) ====================
 let audioUnlocked = false;
