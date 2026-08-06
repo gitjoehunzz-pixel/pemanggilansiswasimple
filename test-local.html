@@ -236,6 +236,9 @@ input[type=number] {
 </div>
 
 <script>
+// ==================== BROADCAST CHANNEL (to index.html) ====================
+const bc = new BroadcastChannel('pemanggilan_test');
+
 // ==================== STUDENT DATA ====================
 const STUDENTS = [
   {name:"Abimana Praga Aksara", cls:"1 A", code:"1a"},
@@ -345,6 +348,10 @@ function tapStudent(name) {
   // Add to queue
   queue.push({ ...student });
   calledSet.add(name);
+  
+  // Broadcast to index.html via BroadcastChannel
+  bc.postMessage({ name: student.name, cls: student.cls, code: student.code });
+  
   log(`📱 HP tap: ${name} (${student.cls}) → queue #${queue.length}`, 'ok');
   renderHP();
   renderComp();
@@ -457,9 +464,10 @@ function clearAll() {
 // ==================== INIT ====================
 renderHP();
 renderComp();
-log('🧪 Local stress test ready (OFFLINE)', 'ok');
+log('🧪 Local stress test ready (OFFLINE + Broadcast)', 'ok');
 log('📋 ' + STUDENTS.length + ' students loaded', 'ok');
-log('💡 Tap siswa di kiri, lihat queue di kanan', '');
+log('📡 Broadcasting to index.html via BroadcastChannel', 'ok');
+log('💡 Buka index.html di tab lain — test ini akan mengirim panggilan ke sana', '');
 </script>
 </body>
 </html>

@@ -699,7 +699,21 @@ db.ref('queue').on('child_added', snap => {
   const student = snap.val();
   if (!student) return;
   const fbKey = snap.key;
-  
+  addToLocalQueue(student, fbKey);
+});
+
+// ==================== LOCAL TEST MODE (BroadcastChannel) ====================
+// test-local.html broadcasts on this channel for offline testing
+const testChannel = new BroadcastChannel('pemanggilan_test');
+testChannel.onmessage = (e) => {
+  const student = e.data;
+  if (!student || !student.name) return;
+  console.log('📥 Local test call:', student.name);
+  addToLocalQueue(student, '_local_' + Date.now());
+};
+
+// Shared helper: add student to queue from any source
+function addToLocalQueue(student, sourceKey) {
   // Find matching student from our data
   const fullStudent = STUDENT_DATA.find(s => s.name === student.name);
   if (!fullStudent) return;
@@ -708,16 +722,16 @@ db.ref('queue').on('child_added', snap => {
   if (state.queue.some(s => s.name === fullStudent.name)) return;
   if (state.current && state.current.name === fullStudent.name) return;
   
-  // Add to local queue with Firebase key
-  const item = { ...fullStudent, _fbKey: fbKey };
+  // Add to local queue with source key
+  const item = { ...fullStudent, _fbKey: sourceKey };
   state.queue.push(item);
-  fbKeyMap[fullStudent.name] = fbKey;
+  fbKeyMap[fullStudent.name] = sourceKey;
   saveState();
   renderQueue();
   renderStudents();
-  console.log('📥 Queue from Firebase:', fullStudent.name);
+  console.log('📥 Queue:', fullStudent.name);
   if (!state.isPlaying) processQueue();
-});
+}
 
 // Push to Firebase when computer calls a student locally
 function pushToFirebaseQueue(student) {
