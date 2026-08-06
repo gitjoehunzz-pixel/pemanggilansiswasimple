@@ -643,37 +643,70 @@ db.ref('.info/connected').on('value', snap => {
 });
 
 // ==================== FIREBASE LISTENERS ====================
-// Listen for new items in queue (from HP)
+// Track which Firebase keys we already have locally to avoid double-adds
+const fbKeyMap = {}; // name -> fbKey
+
+// Listen for new items in queue (from HP or other computers)
 db.ref('queue').on('child_added', snap => {
   const student = snap.val();
   if (!student) return;
+  const fbKey = snap.key;
+  
   // Find matching student from our data
   const fullStudent = STUDENT_DATA.find(s => s.name === student.name);
   if (!fullStudent) return;
-  // Check if already in local queue
+  
+  // Check if already in local queue (avoid duplicates)
   if (state.queue.some(s => s.name === fullStudent.name)) return;
   if (state.current && state.current.name === fullStudent.name) return;
-  // Add to local queue
-  state.queue.push(fullStudent);
+  
+  // Add to local queue with Firebase key
+  const item = { ...fullStudent, _fbKey: fbKey };
+  state.queue.push(item);
+  fbKeyMap[fullStudent.name] = fbKey;
   saveState();
   renderQueue();
   renderStudents();
+  console.log('📥 Queue from Firebase:', fullStudent.name);
   if (!state.isPlaying) processQueue();
 });
 
-// Also allow local calls (clicking on computer) to push to Firebase
-// so HP can see the queue status
-function syncQueueToFirebase() {
-  // Remove all from Firebase queue, re-add from local
-  db.ref('queue').once('value').then(snap => {
-    const promises = [];
-    snap.forEach(child => promises.push(child.ref.remove()));
-    return Promise.all(promises);
-  }).then(() => {
-    state.queue.forEach(s => {
-      db.ref('queue').push({ name: s.name, cls: s.cls, code: s.code, timestamp: Date.now() });
-    });
-  }).catch(() => {});
+// Listen for removed items (when processed by this or another computer)
+db.ref('queue').on('child_removed', snap => {
+  const student = snap.val();
+  if (!student) return;
+  // Remove from local queue if present
+  const idx = state.queue.findIndex(s => s.name === student.name);
+  if (idx !== -1) {
+    state.queue.splice(idx, 1);
+    delete fbKeyMap[student.name];
+    saveState();
+    renderQueue();
+    renderStudents();
+  }
+});
+
+// Push to Firebase when computer calls a student locally
+function pushToFirebaseQueue(student) {
+  const ref = db.ref('queue').push();
+  const fbKey = ref.key;
+  ref.set({
+    name: student.name,
+    cls: student.cls,
+    code: student.code,
+    timestamp: Date.now()
+  });
+  // Store the key so we can remove it later
+  fbKeyMap[student.name] = fbKey;
+  return fbKey;
+}
+
+function removeFromFirebaseQueue(student) {
+  const fbKey = fbKeyMap[student.name];
+  if (fbKey) {
+    db.ref('queue/' + fbKey).remove();
+    delete fbKeyMap[student.name];
+  }
 }
 
 function syncCurrentToFirebase(student) {
@@ -1324,7 +1357,7 @@ function callStudent(student) {
   // Add to queue
   state.queue.push(student);
   saveState();
-  syncQueueToFirebase();
+  pushToFirebaseQueue(student);
   renderQueue();
   renderStudents();
   
@@ -1337,9 +1370,10 @@ function callStudent(student) {
 }
 
 function removeFromQueue(name) {
+  const student = state.queue.find(s => s.name === name);
   state.queue = state.queue.filter(s => s.name !== name);
   saveState();
-  syncQueueToFirebase();
+  if (student) removeFromFirebaseQueue(student);
   renderQueue();
   renderStudents();
   showToast('🗑️ Dihapus dari antrian');
@@ -1356,11 +1390,12 @@ function clearQueue() {
     state.audio = null;
   }
   
+  // Remove all from Firebase
+  state.queue.forEach(s => removeFromFirebaseQueue(s));
   state.queue = [];
   state.current = null;
   state.isPlaying = false;
   saveState();
-  syncQueueToFirebase();
   syncCurrentToFirebase(null);
   refreshAll();
   showToast('🗑️ Antrian dikosongkan');
@@ -1376,7 +1411,7 @@ async function processQueue() {
     
     // Sync to Firebase: set current, remove from queue
     syncCurrentToFirebase(state.current);
-    syncQueueToFirebase();
+    removeFromFirebaseQueue(state.current);
     
     refreshAll();
     
