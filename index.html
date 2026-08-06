@@ -1096,6 +1096,7 @@ function callStudent(student) {
   
   // Add to queue
   state.queue.push(student);
+  saveState();
   renderQueue();
   renderStudents();
   
@@ -1109,6 +1110,7 @@ function callStudent(student) {
 
 function removeFromQueue(name) {
   state.queue = state.queue.filter(s => s.name !== name);
+  saveState();
   renderQueue();
   renderStudents();
   showToast('🗑️ Dihapus dari antrian');
@@ -1128,6 +1130,7 @@ function clearQueue() {
   state.queue = [];
   state.current = null;
   state.isPlaying = false;
+  saveState();
   refreshAll();
   showToast('🗑️ Antrian dikosongkan');
 }
@@ -1138,6 +1141,7 @@ async function processQueue() {
   while (state.queue.length > 0) {
     state.isPlaying = true;
     state.current = state.queue.shift();
+    saveState();
     
     refreshAll();
     
@@ -1150,10 +1154,12 @@ async function processQueue() {
     const expiresAt = Date.now() + 120000;
     const entry = {student: state.current, time, expiresAt};
     state.history.push(entry);
+    saveState();
     
     // Auto-remove from history after 2 minutes
     setTimeout(() => {
       state.history = state.history.filter(h => h !== entry);
+      saveState();
       refreshAll();
     }, 120000);
     
@@ -1169,8 +1175,53 @@ function clearHistory() {
   if (state.history.length === 0) return;
   if (!confirm('Yakin ingin menghapus history?')) return;
   state.history = [];
+  saveState();
   refreshAll();
   showToast('🗑️ History dihapus');
+}
+
+// ==================== PERSISTENCE (localStorage) ====================
+const STORAGE_KEY = 'pemanggilan_siswa_sdpi';
+
+function saveState() {
+  const data = {
+    queue: state.queue.map(s => s.name),
+    history: state.history.map(h => ({ name: h.student.name, time: h.time, expiresAt: h.expiresAt }))
+  };
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    const now = Date.now();
+    
+    // Restore queue
+    if (data.queue) {
+      state.queue = data.queue.map(name => STUDENT_DATA.find(s => s.name === name)).filter(Boolean);
+    }
+    // Restore history (only non-expired entries)
+    if (data.history) {
+      state.history = data.history
+        .filter(h => h.expiresAt > now)
+        .map(h => {
+          const student = STUDENT_DATA.find(s => s.name === h.name);
+          if (!student) return null;
+          // Re-arm auto-clear timer
+          const entry = { student, time: h.time, expiresAt: h.expiresAt };
+          const remaining = h.expiresAt - now;
+          setTimeout(() => {
+            state.history = state.history.filter(e => e !== entry);
+            saveState();
+            refreshAll();
+          }, remaining);
+          return entry;
+        })
+        .filter(Boolean);
+    }
+  } catch(e) { localStorage.removeItem(STORAGE_KEY); }
 }
 
 // ==================== TOAST ====================
@@ -1202,7 +1253,12 @@ document.addEventListener('keydown', (e) => {
 
 // ==================== INIT ====================
 renderTabs();
+loadState();
 refreshAll();
+// Resume queue processing if queue exists after reload
+if (state.queue.length > 0 && !state.isPlaying) {
+  processQueue();
+}
 // Tick history countdown every second
 setInterval(() => {
   if (state.history.length > 0) renderHistory();
