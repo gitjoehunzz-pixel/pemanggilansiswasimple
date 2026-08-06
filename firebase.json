@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "pemanggilsiswasdpi",
     "public": ".",
     "ignore": [
       "firebase.json",
