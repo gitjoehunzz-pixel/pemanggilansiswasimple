@@ -14,7 +14,9 @@
       "**/todo.txt",
       "**/CNAME",
       "**/README.md",
-      "**/.gitignore"
+      "**/.gitignore",
+      "**/test.html",
+      "**/test-local.html"
     ],
     "rewrites": [
       {
