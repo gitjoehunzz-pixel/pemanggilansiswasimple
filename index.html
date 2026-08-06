@@ -907,7 +907,6 @@ function isCalled(student) {
 function getStudentStatus(student) {
   if (state.current && state.current.name === student.name) return 'current';
   if (isInQueue(student)) return 'queue';
-  if (isCalled(student)) return 'called';
   return 'idle';
 }
 
@@ -939,9 +938,6 @@ function renderStudents() {
     } else if (status === 'queue') {
       cardClass = 'in-queue';
       badge = '<span class="badge badge-wait">Antri</span>';
-    } else if (status === 'called') {
-      cardClass = 'called';
-      badge = '<span class="badge badge-done">✓ Selesai</span>';
     } else {
       badge = '<span class="badge badge-call">Panggil</span>';
     }
