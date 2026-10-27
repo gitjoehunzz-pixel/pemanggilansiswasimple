@@ -769,12 +769,14 @@ function addToLocalQueue(student, sourceKey) {
 function pushToFirebaseQueue(student) {
   const ref = db.ref('queue').push();
   const fbKey = ref.key;
-  ref.set({
+  const data = {
     name: student.name,
     cls: student.cls,
     code: student.code,
     timestamp: Date.now()
-  });
+  };
+  if (student.audio) data.audio = student.audio;
+  ref.set(data);
   fbKeyMap[student.name] = fbKey;
   return fbKey;
 }

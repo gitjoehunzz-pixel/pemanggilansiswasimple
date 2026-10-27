@@ -316,12 +316,14 @@ function renderStudents() {
       if (student) {
         // Push to Firebase
         const ref = db.ref('queue').push();
-        ref.set({
+        const payload = {
           name: student.name,
           cls: student.cls,
           code: student.code,
           timestamp: Date.now()
-        }).then(() => {
+        };
+        if (student.audio) payload.audio = student.audio;
+        ref.set(payload).then(() => {
           console.log('✅ Pushed to Firebase:', student.name);
         }).catch(err => {
           console.error('❌ Firebase push failed:', err);
