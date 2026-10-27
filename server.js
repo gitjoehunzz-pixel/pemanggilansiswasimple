@@ -37,6 +37,7 @@ function broadcastState() {
 }
 
 function getAudioFile(student) {
+  if (student.audio) return student.audio.replace(/\\/g, '/');
   const key = student.name.toLowerCase().replace(/ /g, '_').replace(/-/g, '_');
   return `audio/${student.code}_${key}.mp3`;
 }

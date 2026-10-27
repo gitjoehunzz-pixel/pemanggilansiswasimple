@@ -1079,6 +1079,7 @@ const STUDENT_DATA = [
   {name:"Adeeva Rizma Nurmaulida", cls:"5B", code:"5b"},
   {name:"Ainayya Putri Aryanto", cls:"5B", code:"5b"},
   {name:"Alaric Radika Maulana", cls:"5B", code:"5b"},
+  {name:"Alzam Adgha Arshaka", cls:"5B", code:"5b", audio:"audio/5b_Alzam_Adgha_Arshaka.mp3"},
   {name:"Ardhyanto Prabaswara Khafi", cls:"5B", code:"5b"},
   {name:"Azzahra Mutya Ramdhani", cls:"5B", code:"5b"},
   {name:"Bilal Tranata Ashary", cls:"5B", code:"5b"},
@@ -1122,6 +1123,9 @@ const STUDENT_DATA = [
 // ==================== AUDIO MAPPING ====================
 // Maps student name to audio file path
 function getAudioFile(student) {
+  if (student.audio) {
+    return student.audio.replace(/\\/g, '/');
+  }
   // Convert name: lowercase, replace spaces & hyphens with underscores
   let key = student.name.toLowerCase()
     .replace(/ /g, '_')
@@ -1363,7 +1367,7 @@ function refreshAll() {
 
 function playAudio(student) {
   return new Promise((resolve) => {
-    const audioPath = student.audioPath;
+    let audioPath = student.audioPath || getAudioFile(student);
     
     const audio = new Audio();
     audio.preload = 'auto';
@@ -1383,6 +1387,18 @@ function playAudio(student) {
     audio.onended = cleanup;
     
     audio.onerror = () => {
+      if (!audio._retried) {
+        audio._retried = true;
+        const lower = audioPath.toLowerCase();
+        const fallbackPath = audioPath === lower
+          ? ('audio/' + student.code + '_' + student.name.replace(/ /g, '_').replace(/-/g, '_') + '.mp3')
+          : lower;
+        if (fallbackPath !== audioPath) {
+          audio.src = fallbackPath;
+          audio.load();
+          return;
+        }
+      }
       clearTimeout(timeout);
       audio.remove();
       console.warn('Audio not found for:', student.name, audioPath);

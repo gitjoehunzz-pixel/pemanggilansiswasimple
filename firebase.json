@@ -16,7 +16,8 @@
       "**/README.md",
       "**/.gitignore",
       "**/test.html",
-      "**/test-local.html"
+      "**/test-local.html",
+      "**/powershell.cmd"
     ],
     "rewrites": [
       {
